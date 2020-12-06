@@ -60,10 +60,7 @@ class MyWindow(Gtk.Window):
         self.kayit_PassEntry.set_visibility(False)
 
         self.kayit_RegisterButton = Gtk.Button(label = "Register")
-        self.ids = self.kayit_IdEntry.get_text()
-        self.passw = self.kayit_PassEntry.get_text()
-
-        self.kayit_RegisterButton.connect('clicked',self.kullanici_add)
+        self.kayit_RegisterButton.connect('clicked',self.kullanici_ekle)
         self.kayit_GeriButton = Gtk.Button(label = "Back")
 
         kayit_Table.attach(kayit_Label,0,10,0,2)
@@ -73,6 +70,7 @@ class MyWindow(Gtk.Window):
         kayit_Table.attach(self.kayit_PassEntry,5,8,4,5)
         kayit_Table.attach(self.kayit_RegisterButton,4,6,6,7)
         kayit_Table.attach(self.kayit_GeriButton,4,6,7,8)
+
         self.add(kayit_Table)
 
     def baglanti_baslat(self):
@@ -83,13 +81,15 @@ class MyWindow(Gtk.Window):
         self.cursor.execute("CREATE TABLE IF NOT EXISTS users (ID TEXT, Password TEXT)")
         self.con.commit()
     
-    def kullanici_add(self,event):
-        self.kullanici_ekle(self.ids,self.passw)
+    def kullanici_ekle(self,event):
+        ids = self.kayit_IdEntry.get_text()
+        passw = self.kayit_PassEntry.get_text()
+        self.kullanici_ekle_query(ids,passw)
 
-    def kullanici_ekle(self,ids,passw):
-        self.cursor.execute("INSERT INTO users Values(?,?,?)",(1,ids,passw))
+
+    def kullanici_ekle_query(self,ids,passw):
+        self.cursor.execute("INSERT INTO users Values(?,?)",(ids,passw))
         self.con.commit()
-    
     
     
 
