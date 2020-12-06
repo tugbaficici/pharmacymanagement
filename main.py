@@ -22,6 +22,8 @@ class MyWindow(Gtk.Window):
         self.kullanici_tablo_olustur()
         self.giris_ekrani()
 
+    #### Ekranlar #####
+
     def giris_ekrani(self):
 
         self.main_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
@@ -75,6 +77,11 @@ class MyWindow(Gtk.Window):
         self.add(self.kayit_Table)
         self.show_all()
 
+    def ana_ekran(self):
+        print("anaekranageldinizhosgeldiniz")
+
+    #### Veri Tabanı Fonksiyonları ####
+
     def baglanti_baslat(self):
         self.con = sqlite3.connect('pharmacy.db')
         self.cursor = self.con.cursor()
@@ -82,6 +89,24 @@ class MyWindow(Gtk.Window):
     def kullanici_tablo_olustur(self):
         self.cursor.execute("CREATE TABLE IF NOT EXISTS users (ID TEXT, Password TEXT)")
         self.con.commit()
+    
+    def kullanici_ekle_query(self,ids,passw):
+        self.cursor.execute("INSERT INTO users Values(?,?)",(ids,passw))
+        self.con.commit()
+    
+    def kullanici_giris_query(self,ids,passw):
+        self.cursor.execute("SELECT * FROM users WHERE ID == ? AND PASSWORD == ?",(ids,passw))
+        liste = self.cursor.fetchall()
+
+        if len(liste) == 1:
+            self.remove(self.main_Table)
+            self.ana_ekran()
+        else:
+            self.main_hataLabel = Gtk.Label(label = "Wrong credentials!")
+            self.main_Table.attach(self.main_hataLabel,2,8,8,9)
+            self.main_Table.show_all()
+    
+    #### Prio 2 Veri Tabanı Fonksiyonları ####
     
     def kullanici_ekle(self,event):
         ids = self.kayit_IdEntry.get_text()
@@ -100,20 +125,11 @@ class MyWindow(Gtk.Window):
         passw = self.main_PassEntry.get_text()
         self.kullanici_giris_query(ids,passw)
 
-    def kullanici_ekle_query(self,ids,passw):
-        self.cursor.execute("INSERT INTO users Values(?,?)",(ids,passw))
-        self.con.commit()
-    
-    def kullanici_giris_query(self,ids,passw):
-        self.cursor.execute("SELECT * FROM users WHERE ID == ? AND PASSWORD == ?",(ids,passw))
-        liste = self.cursor.fetchall()
 
-        if len(liste) == 1:
-            print('True')
-        else:
-            print('False')
 
-    
+
+
+
 window = MyWindow()
 window.show_all()
 Gtk.main()
