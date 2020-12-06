@@ -6,8 +6,6 @@ from gi.repository import Gtk
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk, GLib
 
-
-
 class MyWindow(Gtk.Window):
 
     def __init__(self):
@@ -20,7 +18,7 @@ class MyWindow(Gtk.Window):
     def main(self):
         self.baglanti_baslat()
         self.kullanici_tablo_olustur()
-        self.kayit_ekrani()
+        self.giris_ekrani()
 
     def giris_ekrani(self):
 
@@ -35,6 +33,7 @@ class MyWindow(Gtk.Window):
         self.main_PassEntry.set_visibility(False)
 
         self.main_LoginButton = Gtk.Button(label = "Login")
+        self.main_LoginButton.connect('clicked',self.kullanici_giris)
         self.main_RegisterButton = Gtk.Button(label = "Register")
         self.main_RegisterButton.connect('clicked',self.kayit_ekrani)
         self.add(main_Table)
@@ -86,12 +85,23 @@ class MyWindow(Gtk.Window):
         passw = self.kayit_PassEntry.get_text()
         self.kullanici_ekle_query(ids,passw)
 
+    def kullanici_giris(self,event):
+        ids = self.main_IdEntry.get_text()
+        passw = self.main_PassEntry.get_text()
+        self.kullanici_giris_query(ids,passw)
 
     def kullanici_ekle_query(self,ids,passw):
         self.cursor.execute("INSERT INTO users Values(?,?)",(ids,passw))
         self.con.commit()
     
-    
+    def kullanici_giris_query(self,ids,passw):
+        self.cursor.execute("SELECT * FROM users WHERE ID == ? AND PASSWORD == ?",(ids,passw))
+        liste = self.cursor.fetchall()
+
+        if len(liste) == 1:
+            print('True')
+        else:
+            print('False')
 
 
 window = MyWindow()
