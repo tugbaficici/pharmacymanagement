@@ -4,7 +4,19 @@ import gi,sqlite3
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk, GLib
+from gi.repository import Gdk, GLib,Pango
+
+
+columns = ["First Name",
+           "Last Name",
+           "Phone Number"]
+
+phonebook = [["Jurg", "Billeter", "555-0123"],
+             ["Johannes", "Schmid", "555-1234"],
+             ["Julita", "Inca", "555-2345"],
+             ["Javier", "Jardon", "555-3456"],
+             ["Jason", "Clinton", "555-4567"],
+             ["Random J.", "Hacker", "555-5678"]]
 
 class MyWindow(Gtk.Window):
 
@@ -78,7 +90,88 @@ class MyWindow(Gtk.Window):
         self.show_all()
 
     def ana_ekran(self):
-        print("anaekranageldinizhosgeldiniz")
+        self.notebook = Gtk.Notebook()
+        self.add(self.notebook)
+        self.satis_ekrani()
+
+        self.page1 = Gtk.Box()
+        self.page1.set_border_width(10)
+        self.page1.add(self.satis_Table)
+        self.notebook.append_page(self.page1, Gtk.Label(label="Sell"))
+
+        self.page2 = Gtk.Box()
+        self.page2.set_border_width(10)
+        self.page2.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page2, Gtk.Label(label="Plain Title"))
+
+        self.page3 = Gtk.Box()
+        self.page3.set_border_width(10)
+        self.page3.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page3, Gtk.Label(label="Plain Title"))
+
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(10)
+        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page4, Gtk.Label(label="Plain Title"))
+
+        self.notebook.show_all()
+    
+    def satis_ekrani(self):
+        self.satis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        self.tablo_gosterimi()
+
+        satis_patienceLabel = Gtk.Label(label = "Patients")
+        satis_patientSearch = Gtk.SearchEntry()
+        #satis_searchEntry.connect("activate")
+        satis_patienceAddButton = Gtk.Button(label = "Add")
+        
+        satis_cartLabel = Gtk.Label(label = "Cart")
+        satis_cartCleanButton = Gtk.Button(label = "Clean")
+
+        satis_medicineSearch = Gtk.SearchEntry()
+        satis_medicineLabel = Gtk.Label(label = "Medicines")
+
+
+        self.add(self.satis_Table)
+        self.satis_Table.attach(satis_patienceLabel,0,5,0,1)
+        self.satis_Table.attach(satis_patientSearch,0,3,1,2)
+        self.satis_Table.attach(satis_patienceAddButton,3,5,1,2)
+        self.satis_Table.attach(self.view,0,5,2,5)
+
+        self.tablo_gosterimi()
+
+        self.satis_Table.attach(satis_cartLabel,0,3,6,7)
+        self.satis_Table.attach(satis_cartCleanButton,3,5,6,7)
+        self.satis_Table.attach(self.view,0,5,7,10)
+
+        self.satis_Table.attach(satis_medicineLabel,5,10,0,1)
+        self.satis_Table.attach(satis_medicineSearch,5,10,1,2)
+        self.tablo_gosterimi()
+        self.satis_Table.attach(self.view,5,10,2,10)
+
+
+
+        self.satis_Table.show_all()
+
+
+    def tablo_gosterimi(self):
+        listmodel = Gtk.ListStore(str, str, str)
+        for i in range(len(phonebook)):
+            listmodel.append(phonebook[i])
+
+
+        self.view = Gtk.TreeView(model=listmodel)
+        for i, column in enumerate(columns):
+            cell = Gtk.CellRendererText()
+
+            if i == 0:
+                cell.props.weight_set = True
+                cell.props.weight = Pango.Weight.BOLD
+
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.view.append_column(col)
+
+
 
     #### Veri Tabanı Fonksiyonları ####
 
@@ -106,6 +199,10 @@ class MyWindow(Gtk.Window):
             self.main_Table.attach(self.main_hataLabel,2,8,8,9)
             self.main_Table.show_all()
     
+    def hasta_tablo_olustur(self):
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS patients (Name TEXT, Surname TEXT, Mail TEXT)")
+        self.con.commit()
+
     #### Prio 2 Veri Tabanı Fonksiyonları ####
     
     def kullanici_ekle(self,event):
@@ -124,10 +221,6 @@ class MyWindow(Gtk.Window):
         ids = self.main_IdEntry.get_text()
         passw = self.main_PassEntry.get_text()
         self.kullanici_giris_query(ids,passw)
-
-
-
-
 
 
 window = MyWindow()
