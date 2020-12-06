@@ -11,13 +11,17 @@ class MyWindow(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self)
-        self.set_default_size(750, 500)
+        self.set_default_size(500, 500)
         self.connect("destroy", Gtk.main_quit)
         self.set_title("Pharmacy Management System")
         self.main()
 
     def main(self):
+        self.giris_ekrani()
 
+    
+
+    def giris_ekrani(self):
         main_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
         main_Label = Gtk.Label(label = "Open Source Pharmacy Management Sysem")
 
@@ -28,7 +32,7 @@ class MyWindow(Gtk.Window):
         self.main_PassEntry = Gtk.Entry()
         self.main_PassEntry.set_visibility(False)
 
-        self.main_LoginButton = Gtk.Button("Login")
+        self.main_LoginButton = Gtk.Button(label = "Login")
         self.add(main_Table)
 
         main_Table.attach(main_Label,0,10,0,2)
