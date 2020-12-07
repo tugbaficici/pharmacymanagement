@@ -1,97 +1,36 @@
-import gi
+#!/usr/bin/env python3
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib, Gio
 
-# list of tuples for each software, containing the software name, initial release, and main programming languages used
-software_list = [
-    ("Firefox", 2002, "C++"),
-    ("Eclipse", 2004, "Java"),
-    ("Pitivi", 2004, "Python"),
-    ("Netbeans", 1996, "Java"),
-    ("Chrome", 2008, "C++"),
-    ("Filezilla", 2001, "C++"),
-    ("Bazaar", 2005, "Python"),
-    ("Git", 2005, "C"),
-    ("Linux Kernel", 1991, "C"),
-    ("GCC", 1987, "C"),
-    ("Frostwire", 2004, "Java"),
-]
-
-
-class TreeViewFilterWindow(Gtk.Window):
+class Test(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Treeview Filter Demo")
-        self.set_border_width(10)
+        Gtk.Window.__init__(self)
+        store = Gtk.ListStore(str)
+        self.tree = Gtk.TreeView(store)
+        for i in range(0,10):
+            store.append(["test " + str(i)])
+        self.connect("delete-event", Gtk.main_quit)
+        self.tree.connect("button_press_event", self.mouse_click)
 
-        # Setting up the self.grid in which the elements are to be positionned
-        self.grid = Gtk.Grid()
-        self.grid.set_column_homogeneous(True)
-        self.grid.set_row_homogeneous(True)
-        self.add(self.grid)
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("Title", renderer, text=0)
+        self.tree.append_column(column)
+        self.add(self.tree)
 
-        # Creating the ListStore model
-        self.software_liststore = Gtk.ListStore(str, int, str)
-        for software_ref in software_list:
-            self.software_liststore.append(list(software_ref))
-        self.current_filter_language = None
+    def mouse_click(self, tv, event):
+        if event.button == 3:
+            # Begin added code
+            pthinfo = self.tree.get_path_at_pos(event.x, event.y)
+            if pthinfo != None:
+                path,col,cellx,celly = pthinfo
+                self.tree.grab_focus()
+                self.tree.set_cursor(path,col,0)
+            # End added code
 
-        # Creating the filter, feeding it with the liststore model
-        self.language_filter = self.software_liststore.filter_new()
-        # setting the filter function, note that we're not using the
-        self.language_filter.set_visible_func(self.language_filter_func)
+            selection = self.tree.get_selection()
+            (model, iter) = selection.get_selected()
+            print(model[iter][0])
 
-        # creating the treeview, making it use the filter as a model, and adding the columns
-        self.treeview = Gtk.TreeView.new_with_model(self.language_filter)
-        for i, column_title in enumerate(
-            ["Software", "Release Year", "Programming Language"]
-        ):
-            renderer = Gtk.CellRendererText()
-            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            self.treeview.append_column(column)
-
-        # creating buttons to filter by programming language, and setting up their events
-        self.buttons = list()
-        for prog_language in ["Java", "C", "C++", "Python", "None"]:
-            button = Gtk.Button(label=prog_language)
-            self.buttons.append(button)
-            button.connect("clicked", self.on_selection_button_clicked)
-
-        # setting up the layout, putting the treeview in a scrollwindow, and the buttons in a row
-        self.scrollable_treelist = Gtk.ScrolledWindow()
-        self.scrollable_treelist.set_vexpand(True)
-        self.grid.attach(self.scrollable_treelist, 0, 0, 8, 10)
-        self.grid.attach_next_to(
-            self.buttons[0], self.scrollable_treelist, Gtk.PositionType.BOTTOM, 1, 1
-        )
-        for i, button in enumerate(self.buttons[1:]):
-            self.grid.attach_next_to(
-                button, self.buttons[i], Gtk.PositionType.RIGHT, 1, 1
-            )
-        self.scrollable_treelist.add(self.treeview)
-
-        self.show_all()
-
-    def language_filter_func(self, model, iter, data):
-        """Tests if the language in the row is the one in the filter"""
-        if (
-            self.current_filter_language is None
-            or self.current_filter_language == "None"
-        ):
-            return True
-        else:
-            return model[iter][2] == self.current_filter_language
-
-    def on_selection_button_clicked(self, widget):
-        """Called on any of the button clicks"""
-        # we set the current language filter to the button's label
-        self.current_filter_language = widget.get_label()
-        print("%s language selected!" % self.current_filter_language)
-        # we update the filter, which updates in turn the view
-        self.language_filter.refilter()
-
-
-win = TreeViewFilterWindow()
-win.connect("destroy", Gtk.main_quit)
+win = Test()
 win.show_all()
 Gtk.main()

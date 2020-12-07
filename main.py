@@ -95,7 +95,6 @@ class MyWindow(Gtk.Window):
         self.page2.set_border_width(10)
         self.page2.set_homogeneous(True)
         self.page2.add(self.alis_Table)
-        self.page2.add(self.satis_Table)
         self.notebook.append_page(self.page2, Gtk.Label(label="Buy"))
 
         self.page3 = Gtk.Box()
@@ -124,6 +123,7 @@ class MyWindow(Gtk.Window):
         satis_patienceLabel = Gtk.Label(label = "Patients")
         satis_patientSearch = Gtk.SearchEntry()
         #satis_searchEntry.connect("activate")
+
         satis_patienceAddButton = Gtk.Button(label = "Add")
         satis_patienceAddButton.connect('clicked',self.hasta_ekle)
         
@@ -136,19 +136,22 @@ class MyWindow(Gtk.Window):
         satis_medicineSearch = Gtk.SearchEntry()
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
+        self.satis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
+
         self.satis_Table.attach(satis_patienceLabel,0,3,0,1)
         self.satis_Table.attach(satis_patientSearch,0,2.5,1,2)
         self.satis_Table.attach(satis_patienceAddButton,2,3,1,2)
-        self.satis_Table.attach(self.view,0,3,2,5)
+        self.satis_Table.attach(self.scroll_patientTable,0,3,2,5)
 
-        self.satis_Table.attach(satis_cartLabel,0,2,6,7)
-        self.satis_Table.attach(satis_cartCleanButton,2,3,6,7)
-        self.satis_Table.attach(self.cart_view,0,3,7,10)
+        self.satis_Table.attach(satis_cartLabel,0,2,5,6)
+        self.satis_Table.attach(satis_cartCleanButton,2,3,5,6)
+        self.satis_Table.attach(self.scroll_cartTable,0,3,6,9)
     
         self.satis_Table.attach(satis_medicineLabel,3,10,0,1)
         self.satis_Table.attach(satis_medicineSearch,3,10,1,2)
 
-        self.satis_Table.attach(self.ilac_view,3,10,2,10)
+        self.satis_Table.attach(self.scroll_medicineTable,3,10,2,10)
+        self.satis_Table.attach(self.satis_checkoutButton,0,3,9,10)
 
         self.view.show_all()
         self.satis_Table.show_all()
@@ -216,17 +219,45 @@ class MyWindow(Gtk.Window):
     ### Tablolar ###
 
     def hasta_tablo(self):
+   
         self.hasta_vericekme_query()
-        listmodel = Gtk.ListStore(str, str, str,str,str)
+        self.listmodel = Gtk.ListStore(str, str, str,str,str)
         for i in range(len(self.hasta_listesi)):
-            listmodel.append(self.hasta_listesi[i])
+            self.listmodel.append(self.hasta_listesi[i])
         
-        self.view = Gtk.TreeView(model=listmodel)
+        
+        self.view = Gtk.TreeView(model=self.listmodel)
         for i, column in enumerate(hasta_columns):
             cell = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.view.append_column(col)
+        
+        self.view.connect('button-press-event' , self.tablo_rightClick)
         self.view.show_all()
+        self.scroll_patientTable = Gtk.ScrolledWindow()
+        self.scroll_patientTable.add(self.view)
+        self.scroll_patientTable.show_all()
+
+    def hasta_tablodel(self):
+        self.listmodel.clear()
+        self.hasta_vericekme_query()
+        self.listmodel = Gtk.ListStore(str, str, str,str,str)
+        for i in range(len(self.hasta_listesi)):
+            self.listmodel.append(self.hasta_listesi[i])
+        
+        
+        self.view = Gtk.TreeView(model=self.listmodel)
+        for i, column in enumerate(hasta_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.view.append_column(col)
+        
+        self.view.connect('button-press-event' , self.tablo_rightClick)
+        self.view.show_all()
+        self.scroll_patientTable = Gtk.ScrolledWindow()
+        self.scroll_patientTable.add(self.view)
+        self.scroll_patientTable.show_all()
+        
 
     def ilac_tablo(self):
         self.ilac_vericekme_query()
@@ -240,6 +271,10 @@ class MyWindow(Gtk.Window):
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.ilac_view.append_column(col)
 
+        self.scroll_medicineTable = Gtk.ScrolledWindow()
+        self.scroll_medicineTable.add(self.ilac_view)
+        self.scroll_medicineTable.show_all()  
+
     def cart_tablo(self):
         listmodel = Gtk.ListStore(str, str, str ,str ,str, str)
         #for i in range(len(self.ilac_listesi)):
@@ -251,6 +286,9 @@ class MyWindow(Gtk.Window):
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.cart_view.append_column(col)
 
+        self.scroll_cartTable = Gtk.ScrolledWindow()
+        self.scroll_cartTable.add(self.cart_view)
+        self.cart_view.show_all()
 
     #### Veri Tabanı Fonksiyonları ####
 
@@ -285,18 +323,12 @@ class MyWindow(Gtk.Window):
         self.con.commit()
 
         self.add_PatientWindow.hide()
-        self.notebook.remove(self.page1)
-        self.satis_ekrani()
 
-        self.page1 = Gtk.Box()
-        self.page1.set_border_width(10)
-        self.page1.set_homogeneous(True)
-        self.page1.add(self.satis_Table)
+        self.listmodel.clear()
+        self.hasta_vericekme_query()
 
-        self.notebook.prepend_page(self.page1, Gtk.Label(label = "Sell"))
-        self.notebook.show_all()
-        page_number = self.notebook.page_num(self.page1)
-        self.notebook.set_current_page(page_number)
+        for i in range(len(self.hasta_listesi)):
+            self.listmodel.append(self.hasta_listesi[i])
         
     def hasta_vericekme_query(self):
         self.cursor.execute("SELECT * FROM patients")
@@ -308,10 +340,7 @@ class MyWindow(Gtk.Window):
                 gecici_liste.append(str(j))
             
             self.hasta_listesi.append(gecici_liste)
-        
-        print(self.hasta_listesi)
 
-    
     def ilac_vericekme_query(self):
         self.cursor.execute("SELECT * FROM medicines")
         ilac_list = self.cursor.fetchall()
@@ -322,11 +351,6 @@ class MyWindow(Gtk.Window):
                 gecici_liste.append(str(j))
             
             self.ilac_listesi.append(gecici_liste)
-
-
-
-
-
 
     #### Prio 2 Veri Tabanı Fonksiyonları ####
     
@@ -346,9 +370,54 @@ class MyWindow(Gtk.Window):
         ids = self.main_IdEntry.get_text()
         passw = self.main_PassEntry.get_text()
         self.kullanici_giris_query(ids,passw)
-    
-    
 
+    #### İşlevsel Fonksiyonlar ####
+
+    def tablo_rightClick(self,treeview, event):
+        if event.button == 3: # right click
+            pthinfo = treeview.get_path_at_pos(event.x, event.y)
+            if pthinfo != None:
+                path,col,cellx,celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path,col,0)
+            selection = treeview.get_selection()
+            (model, iter) = selection.get_selected()
+            self.secilen_Satir=model[iter][0] # seçilen satırı id si
+
+            menu = self.context_menu()
+            menu.popup( None, None, None,None, event.button, event.get_time())
+            return True
+     
+    def context_menu(self): # Buton sağ tıkında açılan menü 
+        menu = Gtk.Menu()
+
+        menu_item_del = Gtk.MenuItem(label = "Sil")
+        menu.append(menu_item_del)
+        menu_item_del.connect("activate",self.onclick_Delete)
+
+        menu_item_connect = Gtk.MenuItem(label = "Güncelle")
+        menu.append(menu_item_connect)
+        menu_item_connect.connect("activate",self.onclick_Update)
+
+        menu.show_all()
+
+        return menu
+    
+    def onclick_Delete(self,action):
+        self.cursor.execute("DELETE FROM patients WHERE ID = ?",(self.secilen_Satir,))
+        self.con.commit()
+     
+        self.listmodel.clear()
+        self.hasta_vericekme_query()
+
+        for i in range(len(self.hasta_listesi)):
+            self.listmodel.append(self.hasta_listesi[i])
+
+    def onclick_Update(self,action):
+        print('sa')
+
+
+    
 window = MyWindow()
 window.show_all()
 Gtk.main()
