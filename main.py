@@ -118,18 +118,21 @@ class MyWindow(Gtk.Window):
     def satis_ekrani(self):
         
         self.hasta_tablo()
+        
         self.satis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
 
         satis_patienceLabel = Gtk.Label(label = "Patients")
         satis_patientSearch = Gtk.SearchEntry()
         #satis_searchEntry.connect("activate")
         satis_patienceAddButton = Gtk.Button(label = "Add")
+        satis_patienceAddButton.connect('clicked',self.hasta_ekle)
         
         self.cart_tablo()
         satis_cartLabel = Gtk.Label(label = "Cart")
         satis_cartCleanButton = Gtk.Button(label = "Clean")
 
         self.ilac_tablo()
+
         satis_medicineSearch = Gtk.SearchEntry()
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
@@ -147,6 +150,7 @@ class MyWindow(Gtk.Window):
 
         self.satis_Table.attach(self.ilac_view,3,10,2,10)
 
+        self.view.show_all()
         self.satis_Table.show_all()
     
     def alis_ekrani(self):
@@ -179,32 +183,35 @@ class MyWindow(Gtk.Window):
         self.alis_Table.show_all()
 
     ### Yan Ekranlar ###
-
-    def hasta_ekle(self):
+    def hasta_ekle(self,event):
         self.add_PatientWindow = Gtk.Window()
-        self.input_window.set_title("Add New Patient")
-        self.input_window.set_border_width(10)
-        table2 = Gtk.Table(n_rows=7, n_columns=0, homogeneous=True)
-        self.input_window.add(table2)
+        self.add_PatientWindow.set_title("Add New Patient")
+        self.add_PatientWindow.set_border_width(10)
 
-        self.host = Gtk.Entry()
-        self.host_name = Gtk.Entry()
-        self.user = Gtk.Entry()
-        self.port = Gtk.Entry()
-        self.submit_button = Gtk.Button(label ="Gönder")
-        self.submit_button.connect('clicked',self.on_click_add_new_host)
+        add_PatientWindowTable = Gtk.Table(n_rows=9, n_columns=0, homogeneous=True)
+        self.add_PatientWindow.add(add_PatientWindowTable)
+
+        self.tcnumber = Gtk.Entry()
+        self.name = Gtk.Entry()
+        self.surname = Gtk.Entry()
+        self.email = Gtk.Entry()
+
+        self.add_PatientButton = Gtk.Button(label ="Send")
+        self.add_PatientButton.connect('clicked',self.add_NewPatient)
   
-        self.host.set_placeholder_text("Host")
-        self.host_name.set_placeholder_text("HostName")
-        self.user.set_placeholder_text("User")
+        self.tcnumber.set_placeholder_text("TC Number (11)")
+        self.name.set_placeholder_text("Patient Name")
+        self.surname.set_placeholder_text("Patient Surname")
+        self.email.set_placeholder_text("Email (Optional)")
 
-        table2.attach(self.host,0,1,0,1)
-        table2.attach(self.host_name,0,1,2,3)
-        table2.attach(self.user,0,1,4,5)
-        table2.attach(self.submit_button,0,1,6,7)
+        add_PatientWindowTable.attach(self.tcnumber,0,1,0,1)
+        add_PatientWindowTable.attach(self.name,0,1,2,3)
+        add_PatientWindowTable.attach(self.surname,0,1,4,5)
+        add_PatientWindowTable.attach(self.email,0,1,6,7)
+        add_PatientWindowTable.attach(self.add_PatientButton,0,1,8,9)
 
-        self.input_window.present()
-        self.input_window.show_all()
+        self.add_PatientWindow.present()
+        self.add_PatientWindow.show_all()
 
     ### Tablolar ###
 
@@ -213,12 +220,13 @@ class MyWindow(Gtk.Window):
         listmodel = Gtk.ListStore(str, str, str,str,str)
         for i in range(len(self.hasta_listesi)):
             listmodel.append(self.hasta_listesi[i])
-
+        
         self.view = Gtk.TreeView(model=listmodel)
         for i, column in enumerate(hasta_columns):
             cell = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.view.append_column(col)
+        self.view.show_all()
 
     def ilac_tablo(self):
         self.ilac_vericekme_query()
@@ -265,17 +273,44 @@ class MyWindow(Gtk.Window):
             self.main_hataLabel = Gtk.Label(label = "Wrong credentials!")
             self.main_Table.attach(self.main_hataLabel,2,8,8,9)
             self.main_Table.show_all()
-    
+
+    def add_NewPatient(self,event):
+
+        tc = self.tcnumber.get_text()
+        name = self.name.get_text()
+        surname = self.surname.get_text()
+        email = self.email.get_text()
+
+        self.cursor.execute("INSERT INTO patients(TC,NAME,SURNAME,EMAIL) Values(?,?,?,?)",(tc,name,surname,email))
+        self.con.commit()
+
+        self.add_PatientWindow.hide()
+        self.notebook.remove(self.page1)
+        self.satis_ekrani()
+
+        self.page1 = Gtk.Box()
+        self.page1.set_border_width(10)
+        self.page1.set_homogeneous(True)
+        self.page1.add(self.satis_Table)
+
+        self.notebook.prepend_page(self.page1, Gtk.Label(label = "Sell"))
+        self.notebook.show_all()
+        page_number = self.notebook.page_num(self.page1)
+        self.notebook.set_current_page(page_number)
+        
     def hasta_vericekme_query(self):
         self.cursor.execute("SELECT * FROM patients")
         hasta_list = self.cursor.fetchall()
         self.hasta_listesi = list()
-        for i inilac_view list(hasta_list):
+        for i in list(hasta_list):
             gecici_liste = list()
             for j in i:
                 gecici_liste.append(str(j))
             
             self.hasta_listesi.append(gecici_liste)
+        
+        print(self.hasta_listesi)
+
     
     def ilac_vericekme_query(self):
         self.cursor.execute("SELECT * FROM medicines")
@@ -287,6 +322,10 @@ class MyWindow(Gtk.Window):
                 gecici_liste.append(str(j))
             
             self.ilac_listesi.append(gecici_liste)
+
+
+
+
 
 
     #### Prio 2 Veri Tabanı Fonksiyonları ####
@@ -307,6 +346,8 @@ class MyWindow(Gtk.Window):
         ids = self.main_IdEntry.get_text()
         passw = self.main_PassEntry.get_text()
         self.kullanici_giris_query(ids,passw)
+    
+    
 
 window = MyWindow()
 window.show_all()
