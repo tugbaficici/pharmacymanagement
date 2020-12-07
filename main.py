@@ -23,7 +23,7 @@ class MyWindow(Gtk.Window):
     def __init__(self):
 
         Gtk.Window.__init__(self)
-        self.set_default_size(500, 500)
+        self.set_default_size(1300, 700)
         self.connect("destroy", Gtk.main_quit)
         self.set_title("Pharmacy Management System")
         self.main()
@@ -32,7 +32,7 @@ class MyWindow(Gtk.Window):
 
         self.baglanti_baslat()
         self.kullanici_tablo_olustur()
-        self.giris_ekrani()
+        self.ana_ekran()
 
     #### Ekranlar #####
 
@@ -89,35 +89,10 @@ class MyWindow(Gtk.Window):
         self.add(self.kayit_Table)
         self.show_all()
 
-    def ana_ekran(self):
-        self.notebook = Gtk.Notebook()
-        self.add(self.notebook)
-        self.satis_ekrani()
-
-        self.page1 = Gtk.Box()
-        self.page1.set_border_width(10)
-        self.page1.add(self.satis_Table)
-        self.notebook.append_page(self.page1, Gtk.Label(label="Sell"))
-
-        self.page2 = Gtk.Box()
-        self.page2.set_border_width(10)
-        self.page2.add(Gtk.Label(label="Default Page!"))
-        self.notebook.append_page(self.page2, Gtk.Label(label="Plain Title"))
-
-        self.page3 = Gtk.Box()
-        self.page3.set_border_width(10)
-        self.page3.add(Gtk.Label(label="Default Page!"))
-        self.notebook.append_page(self.page3, Gtk.Label(label="Plain Title"))
-
-        self.page4 = Gtk.Box()
-        self.page4.set_border_width(10)
-        self.page4.add(Gtk.Label(label="Default Page!"))
-        self.notebook.append_page(self.page4, Gtk.Label(label="Plain Title"))
-
-        self.notebook.show_all()
+    satis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
     
     def satis_ekrani(self):
-        self.satis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        
         self.tablo_gosterimi()
 
         satis_patienceLabel = Gtk.Label(label = "Patients")
@@ -131,34 +106,68 @@ class MyWindow(Gtk.Window):
         satis_medicineSearch = Gtk.SearchEntry()
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
-
-        self.add(self.satis_Table)
-        self.satis_Table.attach(satis_patienceLabel,0,5,0,1)
-        self.satis_Table.attach(satis_patientSearch,0,3,1,2)
-        self.satis_Table.attach(satis_patienceAddButton,3,5,1,2)
-        self.satis_Table.attach(self.view,0,5,2,5)
+        #self.add(self.satis_Table)
+        self.satis_Table.attach(satis_patienceLabel,0,3,0,1)
+        self.satis_Table.attach(satis_patientSearch,0,2,1,2)
+        self.satis_Table.attach(satis_patienceAddButton,2,3,1,2)
+        self.satis_Table.attach(self.view,0,3,2,5)
 
         self.tablo_gosterimi()
 
-        self.satis_Table.attach(satis_cartLabel,0,3,6,7)
-        self.satis_Table.attach(satis_cartCleanButton,3,5,6,7)
-        self.satis_Table.attach(self.view,0,5,7,10)
+        self.satis_Table.attach(satis_cartLabel,0,2,6,7)
+        self.satis_Table.attach(satis_cartCleanButton,2,3,6,7)
+        self.satis_Table.attach(self.view,0,3,7,10)
+    
+        
 
-        self.satis_Table.attach(satis_medicineLabel,5,10,0,1)
-        self.satis_Table.attach(satis_medicineSearch,5,10,1,2)
+        self.satis_Table.attach(satis_medicineLabel,3,10,0,1)
+        self.satis_Table.attach(satis_medicineSearch,3,10,1,2)
         self.tablo_gosterimi()
-        self.satis_Table.attach(self.view,5,10,2,10)
-
-
+        self.satis_Table.attach(self.view,3,10,2,10)
 
         self.satis_Table.show_all()
 
+    
+    def ana_ekran(self):
+        self.notebook = Gtk.Notebook()
+        self.add(self.notebook)
+        self.satis_ekrani()
+        
+        
+        self.page1 = Gtk.Box()
+        self.page1.set_border_width(10)
+        self.page1.set_homogeneous(True)
+        self.page1.add(self.satis_Table)
+        self.notebook.append_page(self.page1, Gtk.Label(label="Sell"))
+
+
+        self.page2 = Gtk.Box()
+        self.page2.set_border_width(10)
+        self.page2.add(self.satis_Table)
+        self.notebook.append_page(self.page2, Gtk.Label(label="Buy"))
+
+        self.page3 = Gtk.Box()
+        self.page3.set_border_width(10)
+        self.page3.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page3, Gtk.Label(label="Medicines"))
+
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(10)
+        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page4, Gtk.Label(label="Patients"))
+
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(10)
+        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page4, Gtk.Label(label="Patients"))       
+        
+
+        self.notebook.show_all()
 
     def tablo_gosterimi(self):
         listmodel = Gtk.ListStore(str, str, str)
         for i in range(len(phonebook)):
             listmodel.append(phonebook[i])
-
 
         self.view = Gtk.TreeView(model=listmodel)
         for i, column in enumerate(columns):
@@ -170,7 +179,6 @@ class MyWindow(Gtk.Window):
 
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.view.append_column(col)
-
 
 
     #### Veri Tabanı Fonksiyonları ####
@@ -221,7 +229,6 @@ class MyWindow(Gtk.Window):
         ids = self.main_IdEntry.get_text()
         passw = self.main_PassEntry.get_text()
         self.kullanici_giris_query(ids,passw)
-
 
 window = MyWindow()
 window.show_all()
