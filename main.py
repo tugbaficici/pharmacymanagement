@@ -25,6 +25,44 @@ class MyWindow(Gtk.Window):
 
     #### Ekranlar #####
 
+    def ana_ekran(self):
+        self.notebook = Gtk.Notebook()
+        self.add(self.notebook)
+        
+        self.satis_ekrani()
+        self.alis_ekrani()
+        self.ilac_ekrani()
+
+        self.page1 = Gtk.Box()
+        self.page1.set_border_width(10)
+        self.page1.set_homogeneous(True)
+        self.page1.add(self.satis_Table)
+        self.notebook.append_page(self.page1, Gtk.Label(label="Sell"))
+
+        self.page2 = Gtk.Box()
+        self.page2.set_border_width(10)
+        self.page2.set_homogeneous(True)
+        self.page2.add(self.alis_Table)
+        self.notebook.append_page(self.page2, Gtk.Label(label="Buy"))
+
+        self.page3 = Gtk.Box()
+        self.page3.set_border_width(10)
+        self.page3.set_homogeneous(True)
+        self.page3.add(self.ilac_notebook)
+        self.notebook.append_page(self.page3, Gtk.Label(label="Medicines"))
+
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(10)
+        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page4, Gtk.Label(label="Patients"))
+
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(10)
+        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page4, Gtk.Label(label="Settings"))       
+    
+        self.notebook.show_all()
+
     def giris_ekrani(self):
 
         self.main_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
@@ -77,42 +115,6 @@ class MyWindow(Gtk.Window):
 
         self.add(self.kayit_Table)
         self.show_all()
-    
-    def ana_ekran(self):
-        self.notebook = Gtk.Notebook()
-        self.add(self.notebook)
-        
-        self.satis_ekrani()
-        self.alis_ekrani()
-        
-        self.page1 = Gtk.Box()
-        self.page1.set_border_width(10)
-        self.page1.set_homogeneous(True)
-        self.page1.add(self.satis_Table)
-        self.notebook.append_page(self.page1, Gtk.Label(label="Sell"))
-
-        self.page2 = Gtk.Box()
-        self.page2.set_border_width(10)
-        self.page2.set_homogeneous(True)
-        self.page2.add(self.alis_Table)
-        self.notebook.append_page(self.page2, Gtk.Label(label="Buy"))
-
-        self.page3 = Gtk.Box()
-        self.page3.set_border_width(10)
-        self.page3.add(Gtk.Label(label="Default Page!"))
-        self.notebook.append_page(self.page3, Gtk.Label(label="Medicines"))
-
-        self.page4 = Gtk.Box()
-        self.page4.set_border_width(10)
-        self.page4.add(Gtk.Label(label="Default Page!"))
-        self.notebook.append_page(self.page4, Gtk.Label(label="Patients"))
-
-        self.page4 = Gtk.Box()
-        self.page4.set_border_width(10)
-        self.page4.add(Gtk.Label(label="Default Page!"))
-        self.notebook.append_page(self.page4, Gtk.Label(label="Settings"))       
-    
-        self.notebook.show_all()
 
     def satis_ekrani(self):
         
@@ -184,7 +186,69 @@ class MyWindow(Gtk.Window):
         self.alis_Table.attach(self.view,3,10,2,10)
 
         self.alis_Table.show_all()
+    
+    def ilac_ekrani(self):
+        self.ilac_notebook = Gtk.Notebook()
 
+        self.ilac_addWindow()
+        self.ilac_addPage = Gtk.Box()
+        self.ilac_addPage.set_border_width(10)
+        self.ilac_addPage.set_homogeneous(True)
+        self.ilac_addPage.add(self.ilac_addTable)
+        self.ilac_notebook.append_page(self.ilac_addPage, Gtk.Label(label="Add"))
+
+        self.ilac_listWindow()
+        self.ilac_listPage = Gtk.Box()
+        self.ilac_listPage.set_border_width(10)
+        self.ilac_listPage.set_homogeneous(True)
+        self.ilac_listPage.add(self.ilac_listTable)
+        self.ilac_notebook.append_page(self.ilac_listPage, Gtk.Label(label="List"))
+
+        self.ilac_addTable.show_all()
+    
+    def ilac_listWindow(self):
+        self.ilac_tablo()
+        self.ilac_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+        self.ilac_listTable.attach(self.scroll_medicineTable,0,10,0,10)
+        self.ilac_listTable.show_all()
+    
+    def ilac_addWindow(self):
+        self.ilac_addTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+
+        self.ilac_nameEntry = Gtk.Entry()
+        self.ilac_doseEntry = Gtk.Entry()
+        self.ilac_activeEntry = Gtk.Entry()
+        self.ilac_pieceEntry = Gtk.Entry()
+        self.ilac_priceEntry = Gtk.Entry()
+
+        ilac_nameLabel = Gtk.Label(label = "Name :")
+        ilac_doseLabel = Gtk.Label(label = "Dose :")
+        ilac_activeLabel = Gtk.Label(label = "Active :")
+        ilac_pieceLabel = Gtk.Label(label = "Piece :")
+        ilac_priceLabel = Gtk.Label(label = "Price :")
+
+        self.ilac_addButton = Gtk.Button(label = "Add") 
+        self.ilac_addButton.connect('clicked',self.ilac_addButtonEvent)    
+        
+        self.ilac_addTable.attach(ilac_nameLabel,1,2,2,3)
+        self.ilac_addTable.attach(self.ilac_nameEntry,3,5,2,3)
+
+        self.ilac_addTable.attach(ilac_doseLabel,6,7,2,3)
+        self.ilac_addTable.attach(self.ilac_doseEntry,8,10,2,3)
+
+        self.ilac_addTable.attach(ilac_activeLabel,1,2,4,5)
+        self.ilac_addTable.attach(self.ilac_activeEntry,3,5,4,5)
+
+        self.ilac_addTable.attach(ilac_pieceLabel,6,7,4,5)
+        self.ilac_addTable.attach(self.ilac_pieceEntry,8,10,4,5)
+
+        self.ilac_addTable.attach(ilac_priceLabel,1,2,6,7)
+        self.ilac_addTable.attach(self.ilac_priceEntry,3,5,6,7)
+
+        self.ilac_addTable.attach(self.ilac_addButton,8,10,6,7)
+
+        self.ilac_addTable.show_all()
+        
     ### Yan Ekranlar ###
     def hasta_ekle(self,event):
         self.add_PatientWindow = Gtk.Window()
@@ -300,11 +364,11 @@ class MyWindow(Gtk.Window):
 
     def ilac_tablo(self):
         self.ilac_vericekme_query()
-        listmodel = Gtk.ListStore(str, str, str ,str ,str, str)
+        self.ilac_listmodel = Gtk.ListStore(str, str, str ,str ,str, str)
         for i in range(len(self.ilac_listesi)):
-            listmodel.append(self.ilac_listesi[i])
+            self.ilac_listmodel.append(self.ilac_listesi[i])
 
-        self.ilac_view = Gtk.TreeView(model=listmodel)
+        self.ilac_view = Gtk.TreeView(model=self.ilac_listmodel)
         for i, column in enumerate(ilac_columns):
             cell = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(column, cell, text=i)
@@ -456,19 +520,41 @@ class MyWindow(Gtk.Window):
         self.cursor.execute("UPDATE patients SET TC = ?, NAME = ?, SURNAME = ?, EMAIL = ? WHERE ID = ?",(int(self.update_tcnumber.get_text()),
             self.update_name.get_text(),self.update_surname.get_text(),self.update_email.get_text(),self.secilen_Satir))
         self.con.commit()
-        
+
         self.update_PatientWindow.hide()
         self.listmodel.clear()
         self.hasta_vericekme_query()
 
         for i in range(len(self.hasta_listesi)):
             self.listmodel.append(self.hasta_listesi[i])
-
-
-
-
-
     
+    def ilac_addButtonEvent(self,event):
+        self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE) Values(?,?,?,?,?)",
+            (self.ilac_nameEntry.get_text(),self.ilac_doseEntry.get_text(),self.ilac_activeEntry.get_text(),self.ilac_pieceEntry.get_text(),
+                                                                                                            self.ilac_priceEntry.get_text()))
+        self.con.commit()
+
+        self.ilac_nameEntry.set_text('')
+        self.ilac_doseEntry.set_text('')
+        self.ilac_activeEntry.set_text('')
+        self.ilac_pieceEntry.set_text('')
+        self.ilac_priceEntry.set_text('')
+
+        self.ilac_vericekme_query()
+
+        for i in range(len(self.ilac_listesi)):
+            self.ilac_listmodel.append(self.ilac_listesi[i])
+        
+        self.satis_ekrani()
+
+        
+
+
+        
+
+
+
+
 window = MyWindow()
 window.show_all()
 Gtk.main()

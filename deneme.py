@@ -1,36 +1,38 @@
-#!/usr/bin/env python3
+from gi.repository import Gtk
 
-from gi.repository import Gtk, GLib, Gio
-
-class Test(Gtk.Window):
+class Example:
     def __init__(self):
-        Gtk.Window.__init__(self)
-        store = Gtk.ListStore(str)
-        self.tree = Gtk.TreeView(store)
-        for i in range(0,10):
-            store.append(["test " + str(i)])
-        self.connect("delete-event", Gtk.main_quit)
-        self.tree.connect("button_press_event", self.mouse_click)
+        window = Gtk.Window()
+        window.connect('delete-event', Gtk.main_quit)
 
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("Title", renderer, text=0)
-        self.tree.append_column(column)
-        self.add(self.tree)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        notebook = Gtk.Notebook()
+        button = Gtk.Button('Get text')
+        button.connect('clicked', self.on_button_clicked)
 
-    def mouse_click(self, tv, event):
-        if event.button == 3:
-            # Begin added code
-            pthinfo = self.tree.get_path_at_pos(event.x, event.y)
-            if pthinfo != None:
-                path,col,cellx,celly = pthinfo
-                self.tree.grab_focus()
-                self.tree.set_cursor(path,col,0)
-            # End added code
+        self.entry1 = Gtk.Entry()
+        self.entry2 = Gtk.Entry()
+        self.entry2.set_input_purpose(Gtk.InputPurpose.NUMBER)
 
-            selection = self.tree.get_selection()
-            (model, iter) = selection.get_selected()
-            print(model[iter][0])
+        notebook.append_page(self.entry1)
+        notebook.append_page(self.entry2)
 
-win = Test()
-win.show_all()
-Gtk.main()
+        box.pack_end(button, True, True, 0)
+        box.pack_start(notebook, True, True, 0)
+        window.add(box)
+        window.show_all()
+
+    def on_button_clicked(self, widget):
+        self.try_conversion(self.entry1.get_text())
+        self.try_conversion(self.entry2.get_text())
+
+    def try_conversion(self, text):
+        try:
+            print('Float: {}'.format(float(text)))
+        except ValueError:
+            print('String: ' + text)
+
+
+if __name__ == '__main__':
+    Example()
+    Gtk.main()
