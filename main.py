@@ -136,7 +136,6 @@ class MyWindow(Gtk.Window):
         satis_cartCleanButton = Gtk.Button(label = "Clean")
 
         self.ilac_tablo()
-
         satis_medicineSearch = Gtk.SearchEntry()
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
@@ -161,7 +160,6 @@ class MyWindow(Gtk.Window):
         self.satis_Table.show_all()
     
     def alis_ekrani(self):
-
         self.alis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
 
         alis_factoriesLabel = Gtk.Label(label = "Factories")
@@ -176,7 +174,6 @@ class MyWindow(Gtk.Window):
 
         self.alis_Table.attach(alis_factoriesLabel,0,3,0,1)
         self.alis_Table.attach(alis_searchEntry,0,3,1,2)
-        self.alis_Table.attach(self.view,0,3,2,5)
 
         self.alis_Table.attach(alis_cartLabel,0,2,6,7)
         self.alis_Table.attach(alis_cartCleanButton,2,3,6,7)
@@ -328,31 +325,11 @@ class MyWindow(Gtk.Window):
         self.update_PatientWindow.show_all()
 
     ### Tablolar ###
-
+    listmodel = Gtk.ListStore(str, str, str,str,str)
     def hasta_tablo(self):
    
         self.hasta_vericekme_query()
-        self.listmodel = Gtk.ListStore(str, str, str,str,str)
-        for i in range(len(self.hasta_listesi)):
-            self.listmodel.append(self.hasta_listesi[i])
-        
-        
-        self.view = Gtk.TreeView(model=self.listmodel)
-        for i, column in enumerate(hasta_columns):
-            cell = Gtk.CellRendererText()
-            col = Gtk.TreeViewColumn(column, cell, text=i)
-            self.view.append_column(col)
-        
-        self.view.connect('button-press-event' , self.tablo_rightClick)
-        self.view.show_all()
-        self.scroll_patientTable = Gtk.ScrolledWindow()
-        self.scroll_patientTable.add(self.view)
-        self.scroll_patientTable.show_all()
-
-    def hasta_tablodel(self):
         self.listmodel.clear()
-        self.hasta_vericekme_query()
-        self.listmodel = Gtk.ListStore(str, str, str,str,str)
         for i in range(len(self.hasta_listesi)):
             self.listmodel.append(self.hasta_listesi[i])
         
@@ -368,11 +345,11 @@ class MyWindow(Gtk.Window):
         self.scroll_patientTable = Gtk.ScrolledWindow()
         self.scroll_patientTable.add(self.view)
         self.scroll_patientTable.show_all()
-        
 
+    ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str)
     def ilac_tablo(self):
         self.ilac_vericekme_query()
-        self.ilac_listmodel = Gtk.ListStore(str, str, str ,str ,str, str)
+        self.ilac_listmodel.clear()
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
 
@@ -553,6 +530,7 @@ class MyWindow(Gtk.Window):
 
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
+        
     
         
 
