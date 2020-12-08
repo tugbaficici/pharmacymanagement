@@ -51,9 +51,11 @@ class MyWindow(Gtk.Window):
         self.page3.add(self.ilac_notebook)
         self.notebook.append_page(self.page3, Gtk.Label(label="Medicines"))
 
+        self.hasta_listWindow()
         self.page4 = Gtk.Box()
-        self.page4.set_border_width(10)
-        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.page4.set_border_width(20)
+        self.page4.set_homogeneous(True)
+        self.page4.add(self.hasta_listTable)
         self.notebook.append_page(self.page4, Gtk.Label(label="Patients"))
 
         self.page4 = Gtk.Box()
@@ -248,7 +250,13 @@ class MyWindow(Gtk.Window):
         self.ilac_addTable.attach(self.ilac_addButton,8,10,6,7)
 
         self.ilac_addTable.show_all()
-        
+    
+    def hasta_listWindow(self):
+        self.hasta_tablo()
+        self.hasta_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+        self.hasta_listTable.attach(self.scroll_patientTable,0,10,0,10)
+        self.hasta_listTable.show_all()
+
     ### Yan Ekranlar ###
     def hasta_ekle(self,event):
         self.add_PatientWindow = Gtk.Window()
@@ -540,20 +548,13 @@ class MyWindow(Gtk.Window):
         self.ilac_pieceEntry.set_text('')
         self.ilac_priceEntry.set_text('')
 
+        self.ilac_listmodel.clear()
         self.ilac_vericekme_query()
 
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
+    
         
-        self.satis_ekrani()
-
-        
-
-
-        
-
-
-
 
 window = MyWindow()
 window.show_all()
