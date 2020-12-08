@@ -215,6 +215,45 @@ class MyWindow(Gtk.Window):
 
         self.add_PatientWindow.present()
         self.add_PatientWindow.show_all()
+    
+    def hasta_güncelle(self,event):
+        self.cursor.execute("SELECT * FROM patients WHERE ID = ?",(self.secilen_Satir,))
+        liste = list()
+        liste = self.cursor.fetchall()
+
+        self.update_PatientWindow = Gtk.Window()
+        self.update_PatientWindow.set_title("Update New Patient")
+        self.update_PatientWindow.set_border_width(10)
+
+        update_PatientWindowTable = Gtk.Table(n_rows=9, n_columns=0, homogeneous=True)
+        self.update_PatientWindow.add(update_PatientWindowTable)
+
+        self.update_tcnumber = Gtk.Entry()
+        self.update_name = Gtk.Entry()
+        self.update_surname = Gtk.Entry()
+        self.update_email = Gtk.Entry()
+
+        self.update_tcnumber.set_text(str(liste[0][1]))
+        self.update_name.set_text(str(liste[0][2]))
+        self.update_surname.set_text(str(liste[0][3]))
+        self.update_email.set_text(str(liste[0][4]))
+
+        self.update_PatientButton = Gtk.Button(label ="Send")
+        self.update_PatientButton.connect('clicked',self.onclick_Update)
+  
+        self.update_tcnumber.set_placeholder_text("TC Number (11)")
+        self.update_name.set_placeholder_text("Patient Name")
+        self.update_surname.set_placeholder_text("Patient Surname")
+        self.update_email.set_placeholder_text("Email (Optional)")
+
+        update_PatientWindowTable.attach(self.update_tcnumber,0,1,0,1)
+        update_PatientWindowTable.attach(self.update_name,0,1,2,3)
+        update_PatientWindowTable.attach(self.update_surname,0,1,4,5)
+        update_PatientWindowTable.attach(self.update_email,0,1,6,7)
+        update_PatientWindowTable.attach(self.update_PatientButton,0,1,8,9)
+
+        self.update_PatientWindow.present()
+        self.update_PatientWindow.show_all()
 
     ### Tablolar ###
 
@@ -351,7 +390,7 @@ class MyWindow(Gtk.Window):
                 gecici_liste.append(str(j))
             
             self.ilac_listesi.append(gecici_liste)
-
+    
     #### Prio 2 Veri Tabanı Fonksiyonları ####
     
     def kullanici_ekle(self,event):
@@ -397,7 +436,7 @@ class MyWindow(Gtk.Window):
 
         menu_item_connect = Gtk.MenuItem(label = "Güncelle")
         menu.append(menu_item_connect)
-        menu_item_connect.connect("activate",self.onclick_Update)
+        menu_item_connect.connect("activate",self.hasta_güncelle)
 
         menu.show_all()
 
@@ -412,9 +451,21 @@ class MyWindow(Gtk.Window):
 
         for i in range(len(self.hasta_listesi)):
             self.listmodel.append(self.hasta_listesi[i])
-
+    
     def onclick_Update(self,action):
-        print('sa')
+        self.cursor.execute("UPDATE patients SET TC = ?, NAME = ?, SURNAME = ?, EMAIL = ? WHERE ID = ?",(int(self.update_tcnumber.get_text()),
+            self.update_name.get_text(),self.update_surname.get_text(),self.update_email.get_text(),self.secilen_Satir))
+        self.con.commit()
+        
+        self.update_PatientWindow.hide()
+        self.listmodel.clear()
+        self.hasta_vericekme_query()
+
+        for i in range(len(self.hasta_listesi)):
+            self.listmodel.append(self.hasta_listesi[i])
+
+
+
 
 
     
