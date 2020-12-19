@@ -291,7 +291,7 @@ class MyWindow(Gtk.Window):
         liste = self.cursor.fetchall()
 
         self.update_PatientWindow = Gtk.Window()
-        self.update_PatientWindow.set_title("Update New Patient")
+        self.update_PatientWindow.set_title("Update Patient")
         self.update_PatientWindow.set_border_width(10)
 
         update_PatientWindowTable = Gtk.Table(n_rows=9, n_columns=0, homogeneous=True)
@@ -323,7 +323,50 @@ class MyWindow(Gtk.Window):
 
         self.update_PatientWindow.present()
         self.update_PatientWindow.show_all()
+    
+    def ilac_guncelle(self,event):
+        self.cursor.execute("SELECT * FROM medicines WHERE ID = ?",(self.secilen_Satir,))
+        liste = list()
+        liste = self.cursor.fetchall()
 
+        self.update_MedicineWindow= Gtk.Window()
+        self.update_MedicineWindow.set_title("Update Patient")
+        self.update_MedicineWindow.set_border_width(10)
+
+        update_MedicineWindowTable = Gtk.Table(n_rows=11, n_columns=0, homogeneous=True)
+        self.update_MedicineWindow.add(update_MedicineWindowTable)
+
+        self.update_Medicinename = Gtk.Entry()
+        self.update_Medicinedose = Gtk.Entry()
+        self.update_Medicineactive = Gtk.Entry()
+        self.update_Medicinepiece = Gtk.Entry()
+        self.update_Medicineprice = Gtk.Entry()
+
+        self.update_Medicinename.set_text(str(liste[0][1]))
+        self.update_Medicinedose.set_text(str(liste[0][2]))
+        self.update_Medicineactive.set_text(str(liste[0][3]))
+        self.update_Medicinepiece.set_text(str(liste[0][4]))
+        self.update_Medicineprice.set_text(str(liste[0][5]))
+
+        self.update_Medicinebutton = Gtk.Button(label ="Send")
+        self.update_Medicinebutton.connect('clicked',self.onclick_Update)
+  
+        self.update_Medicinename.set_placeholder_text("Medicine Name")
+        self.update_Medicinedose.set_placeholder_text("Medicine Dose")
+        self.update_Medicineactive.set_placeholder_text("Medicine Active")
+        self.update_Medicinepiece.set_placeholder_text("Medicine Piece")
+        self.update_Medicineprice.set_placeholder_text("Medicine Price")
+
+        update_MedicineWindowTable.attach(self.update_Medicinename,0,1,0,1)
+        update_MedicineWindowTable.attach(self.update_Medicinedose,0,1,2,3)
+        update_MedicineWindowTable.attach(self.update_Medicineactive,0,1,4,5)
+        update_MedicineWindowTable.attach(self.update_Medicinepiece,0,1,6,7)
+        update_MedicineWindowTable.attach(self.update_Medicineprice,0,1,8,9)
+        update_MedicineWindowTable.attach(self.update_Medicinebutton,0,1,10,11)
+
+        self.update_MedicineWindow.present()
+        self.update_MedicineWindow.show_all()
+    
     ### Tablolar ###
     listmodel = Gtk.ListStore(str, str, str,str,str)
     def hasta_tablo(self):
@@ -333,20 +376,20 @@ class MyWindow(Gtk.Window):
         for i in range(len(self.hasta_listesi)):
             self.listmodel.append(self.hasta_listesi[i])
         
-        
         self.view = Gtk.TreeView(model=self.listmodel)
         for i, column in enumerate(hasta_columns):
             cell = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.view.append_column(col)
         
-        self.view.connect('button-press-event' , self.tablo_rightClick)
+        self.view.connect('button-press-event' , self.tablo_rightClick,'patients')
         self.view.show_all()
         self.scroll_patientTable = Gtk.ScrolledWindow()
         self.scroll_patientTable.add(self.view)
         self.scroll_patientTable.show_all()
 
     ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str)
+
     def ilac_tablo(self):
         self.ilac_vericekme_query()
         self.ilac_listmodel.clear()
@@ -358,6 +401,9 @@ class MyWindow(Gtk.Window):
             cell = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.ilac_view.append_column(col)
+
+        self.ilac_view.connect('button-press-event' , self.tablo_rightClick,'medicines') 
+        self.ilac_view.show_all()        
 
         self.scroll_medicineTable = Gtk.ScrolledWindow()
         self.scroll_medicineTable.add(self.ilac_view)
@@ -461,7 +507,8 @@ class MyWindow(Gtk.Window):
 
     #### İşlevsel Fonksiyonlar ####
 
-    def tablo_rightClick(self,treeview, event):
+    def tablo_rightClick(self,treeview, event,tablename):
+        self.table_type = tablename
         if event.button == 3: # right click
             pthinfo = treeview.get_path_at_pos(event.x, event.y)
             if pthinfo != None:
@@ -471,6 +518,8 @@ class MyWindow(Gtk.Window):
             selection = treeview.get_selection()
             (model, iter) = selection.get_selected()
             self.secilen_Satir=model[iter][0] # seçilen satırı id si
+            print(self.secilen_Satir)
+            print(treeview.get_model())
 
             menu = self.context_menu()
             menu.popup( None, None, None,None, event.button, event.get_time())
@@ -483,35 +532,68 @@ class MyWindow(Gtk.Window):
         menu.append(menu_item_del)
         menu_item_del.connect("activate",self.onclick_Delete)
 
-        menu_item_connect = Gtk.MenuItem(label = "Güncelle")
-        menu.append(menu_item_connect)
-        menu_item_connect.connect("activate",self.hasta_güncelle)
+        menu_item_update = Gtk.MenuItem(label = "Güncelle")
+        menu.append(menu_item_update)
+        if self.table_type == 'patients':
+            menu_item_update.connect("activate",self.hasta_güncelle)
+        
+        if self.table_type == 'medicines':
+            menu_item_update.connect("activate",self.ilac_guncelle)
 
         menu.show_all()
 
         return menu
     
     def onclick_Delete(self,action):
-        self.cursor.execute("DELETE FROM patients WHERE ID = ?",(self.secilen_Satir,))
-        self.con.commit()
+        if self.table_type == 'patients':
+            self.cursor.execute("DELETE FROM patients WHERE ID = ?",(self.secilen_Satir,))
+            self.con.commit()
      
-        self.listmodel.clear()
-        self.hasta_vericekme_query()
+            self.listmodel.clear()
+            self.hasta_vericekme_query()
 
-        for i in range(len(self.hasta_listesi)):
-            self.listmodel.append(self.hasta_listesi[i])
-    
+            for i in range(len(self.hasta_listesi)):
+                self.listmodel.append(self.hasta_listesi[i])
+        
+        if self.table_type == 'medicines':
+            self.cursor.execute("DELETE FROM medicines WHERE ID = ?",(self.secilen_Satir,))
+            self.con.commit()
+     
+            self.ilac_listmodel.clear()
+            self.ilac_vericekme_query()
+
+            for i in range(len(self.ilac_listesi)):
+                self.ilac_listmodel.append(self.ilac_listesi[i])
+
     def onclick_Update(self,action):
-        self.cursor.execute("UPDATE patients SET TC = ?, NAME = ?, SURNAME = ?, EMAIL = ? WHERE ID = ?",(int(self.update_tcnumber.get_text()),
-            self.update_name.get_text(),self.update_surname.get_text(),self.update_email.get_text(),self.secilen_Satir))
-        self.con.commit()
+        if self.table_type == 'patients':
+        
+            self.cursor.execute("UPDATE patients SET TC = ?, NAME = ?, SURNAME = ?, EMAIL = ? WHERE ID = ?",(int(self.update_tcnumber.get_text()),
+                self.update_name.get_text(),self.update_surname.get_text(),self.update_email.get_text(),self.secilen_Satir))
+            self.con.commit()
 
-        self.update_PatientWindow.hide()
-        self.listmodel.clear()
-        self.hasta_vericekme_query()
+            self.update_PatientWindow.hide()
+            self.listmodel.clear()
+            self.hasta_vericekme_query()
 
-        for i in range(len(self.hasta_listesi)):
-            self.listmodel.append(self.hasta_listesi[i])
+            for i in range(len(self.hasta_listesi)):
+                self.listmodel.append(self.hasta_listesi[i])
+
+        if self.table_type == 'medicines':
+            self.cursor.execute("UPDATE medicines SET NAME = ?, DOSE = ?, ACTIVE = ?, PIECE = ?, PRICE = ? WHERE ID = ?",(self.update_Medicinename.get_text(),
+                int(self.update_Medicinedose.get_text()),
+                self.update_Medicineactive.get_text(),
+                int(self.update_Medicinepiece.get_text()),
+                int(self.update_Medicineprice.get_text()),
+                self.secilen_Satir))
+            self.con.commit()
+
+            self.update_MedicineWindow.hide()
+            self.ilac_listmodel.clear()
+            self.ilac_vericekme_query()
+
+            for i in range(len(self.ilac_listesi)):
+                self.ilac_listmodel.append(self.ilac_listesi[i])
     
     def ilac_addButtonEvent(self,event):
         self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE) Values(?,?,?,?,?)",
