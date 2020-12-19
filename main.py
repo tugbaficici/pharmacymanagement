@@ -5,6 +5,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk, GLib,Pango
+from mail import send_mail
 
 hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
 ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY"]
@@ -540,6 +541,8 @@ class MyWindow(Gtk.Window):
         proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
 
         self.proceedButton = Gtk.Button(label = "Send")
+        self.proceedButton.connect('clicked',send_mail,self.proceedPatMail,"deneme")
+        self.proceedButton.connect('clicked',self.proceedex)
         self.proceedExit = Gtk.Button(label = "Exit")
         self.proceedExit.connect('clicked',self.proceedex)
         
@@ -572,6 +575,7 @@ class MyWindow(Gtk.Window):
 
         self.proceedWindow.present()
         self.proceedWindow.show_all()
+    
     
     def proceedex(self,event):
         self.proceedWindow.hide()
@@ -687,6 +691,7 @@ class MyWindow(Gtk.Window):
         self.cart_view.connect("drag-data-received", self.on_drag_data_received)
 
         self.cart_view.connect('button-press-event' , self.tablo_rightClick,'cart')
+        self.cart_view.connect('button-press-event', self.tablo_leftClick,'cart')
         self.cart_view.show_all()
 
         self.scroll_cartTable = Gtk.ScrolledWindow()
@@ -931,21 +936,21 @@ class MyWindow(Gtk.Window):
             return True
 
     def tablo_leftClick(self,treeview,event,tablename):
-        self.table_type = tablename
-
-        pthinfo = treeview.get_path_at_pos(event.x, event.y)
-        if pthinfo != None:
-            path,col,cellx,celly = pthinfo
-            treeview.grab_focus()
-            treeview.set_cursor(path,col,0)
-        selection = treeview.get_selection()
-        (model, iter) = selection.get_selected()
-        
-        self.proceedPatTC = model[iter][1]
-        self.proceedPatName = model[iter][2]
-        self.proceedPatSurname = model[iter][3]
-        self.proceedPatMail = model[iter][4]
-    
+        self.table_typeLeft = tablename
+        if self.table_typeLeft == 'patients':
+            pthinfo = treeview.get_path_at_pos(event.x, event.y)
+            if pthinfo != None:
+                path,col,cellx,celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path,col,0)
+            selection = treeview.get_selection()
+            (model, iter) = selection.get_selected()
+            
+            self.proceedPatTC = model[iter][1]
+            self.proceedPatName = model[iter][2]
+            self.proceedPatSurname = model[iter][3]
+            self.proceedPatMail = model[iter][4]
+ 
     def tablo_rightClickFac(self,treeview, event,tablename):
         self.table_type = tablename
         
@@ -966,7 +971,6 @@ class MyWindow(Gtk.Window):
         for i in range(len(self.facilac_listesi)):
             self.facilac_listmodel.append(self.facilac_listesi[i])
 
-     
     def context_menu(self): # Buton sağ tıkında açılan menü 
         menu = Gtk.Menu()
 
