@@ -126,7 +126,7 @@ class MyWindow(Gtk.Window):
 
         satis_patienceLabel = Gtk.Label(label = "Patients")
         satis_patientSearch = Gtk.SearchEntry()
-        #satis_searchEntry.connect("activate")
+        satis_patientSearch.connect("activate",self.patients_searchBar)
 
         satis_patienceAddButton = Gtk.Button(label = "Add")
         satis_patienceAddButton.connect('clicked',self.hasta_ekle)
@@ -661,7 +661,7 @@ class MyWindow(Gtk.Window):
                 int(self.update_Medicinedose.get_text()),
                 self.update_Medicineactive.get_text(),
                 int(self.update_Medicinepiece.get_text()),
-                int(self.update_Medicineprice.get_text()),
+                self.update_Medicineprice.get_text(),
                 self.secilen_Satir))
             self.con.commit()
 
@@ -689,6 +689,22 @@ class MyWindow(Gtk.Window):
 
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
+    
+    def patients_searchBar(self,searchentry):
+        search_text = searchentry.get_text()
+        keys = self.baglantilar.keys()
+        for row in self.listbox.get_children():
+            self.listbox.remove(row)
+        for i in keys:
+
+            if search_text in i:
+                deneme_button=Gtk.Button.new_with_label(i)
+                deneme_button.connect("button-press-event",self.button_clicked)
+                deneme_button.connect("button-press-event",self.button_left_click)
+                self.listbox.add(deneme_button)
+                
+                self.listbox.show_all()
+
         
     
         

@@ -7,16 +7,16 @@ try:
     mail = smtplib.SMTP("smtp.gmail.com",587)
     mail.ehlo()
     mail.starttls()
-    mail.login("opensourcepms@gmail.com", "passw")
+    mail.login("opensourcepms@gmail.com", "123123123Aa*")
 
     mesaj = MIMEMultipart()
     mesaj["From"] = "opensourcepms@gmail.com" 
-    mesaj["To"] = "zekiahmetbayar1@gmail.com"         
+    mesaj["To"] = "bayar.zeki@std.izu.edu.tr"         
     mesaj["Subject"] = "Open Source PMS | İlaç Bilgileriniz" 
 
     body = """
-
-    Open source pms mail gönderme scripti.
+    
+    İlaç Adı | Günde kaç kere kullanılacak | Hebekl hübele prospektüs
 
     """
 
