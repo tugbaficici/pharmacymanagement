@@ -794,8 +794,6 @@ class MyWindow(Gtk.Window):
         for i in range(len(self.facilac_listesi)):
             self.facilac_listmodel.append(self.facilac_listesi[i])
 
-
-        
      
     def context_menu(self): # Buton sağ tıkında açılan menü 
         menu = Gtk.Menu()

@@ -193,10 +193,10 @@ class MyWindow(Gtk.Window):
         self.alis_Table.attach(alis_factoriesAddButton,2,3,1,2)
         self.alis_Table.attach(self.scroll_factoriesTable,0,3,2,5)
 
-        self.cart_tablo()
+        self.cart_tablo2()
         self.alis_Table.attach(alis_cartLabel,0,2,5,6)
         self.alis_Table.attach(alis_cartCleanButton,2,3,5,6)
-        self.alis_Table.attach(self.scroll_cartTable,0,3,6,9)
+        self.alis_Table.attach(self.scroll_cartTable2,0,3,6,9)
     
         self.facilac_tablo()
         self.alis_Table.attach(alis_medicineLabel,3,10,0,1)
@@ -362,6 +362,30 @@ class MyWindow(Gtk.Window):
 
         self.cartGuncelleWindow.present()
         self.cartGuncelleWindow.show_all()
+    
+    def cart_guncelle2(self,event):
+        self.cartGuncelleWindow2 = Gtk.Window()
+        self.cartGuncelleWindow2.set_title("Box")
+        self.cartGuncelleWindow2.set_border_width(10)
+
+        self.cartGuncelleWindowTable2 = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+        self.cartGuncelleWindow2.add(self.cartGuncelleWindowTable2)
+
+        self.cartGuncelleSayi2 = Gtk.Entry()
+            
+
+        self.cartGuncelleButton2 = Gtk.Button(label ="Send")
+        self.cartGuncelleButton2.connect('clicked',self.onclick_Update)
+    
+        self.cartGuncelleSayi2.set_placeholder_text("Piece")
+        
+
+        self.cartGuncelleWindowTable2.attach(self.cartGuncelleSayi2,0,1,0,1)
+        self.cartGuncelleWindowTable2.attach(self.cartGuncelleButton2,0,1,1,2)
+        
+
+        self.cartGuncelleWindow2.present()
+        self.cartGuncelleWindow2.show_all()
 
     def hasta_guncelle(self,event):
         self.cursor.execute("SELECT * FROM patients WHERE ID = ?",(self.secilen_Satir,))
@@ -580,6 +604,28 @@ class MyWindow(Gtk.Window):
         self.scroll_cartTable.add(self.cart_view)
         self.cart_view.show_all()
 
+    cartlistmodel2 = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
+    def cart_tablo2(self):
+        
+        #for i in range(len(self.ilac_listesi)):
+        #    listmodel.append(self.ilac_listesi[i])
+
+        self.cart_view2 = Gtk.TreeView(model=self.cartlistmodel2)
+        for i, column in enumerate(cart_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.cart_view2.append_column(col)
+
+        self.cart_view2.enable_model_drag_dest(TARGETS, DRAG_ACTION)
+        self.cart_view2.connect("drag-data-received", self.on_drag_data_received2)
+
+        self.cart_view2.connect('button-press-event' , self.tablo_rightClick,'cart2')
+        self.cart_view2.show_all()
+
+        self.scroll_cartTable2 = Gtk.ScrolledWindow()
+        self.scroll_cartTable2.add(self.cart_view2)
+        self.cart_view2.show_all()
+
     ###DRAG AND DROP
     def on_drag_data_get(self, widget, drag_context, data, info, time):
         select = widget.get_selection()
@@ -590,8 +636,8 @@ class MyWindow(Gtk.Window):
             self.Dragliste.append(i)
   
     geciciliste=list()
+    geciciliste2=list()
     def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
-        print(self.geciciliste)
         if self.Dragliste[0] in self.geciciliste:
             pass
         else:
@@ -608,6 +654,27 @@ class MyWindow(Gtk.Window):
             self.ddKutuSayisiTable.attach(self.ddKutuSayisi_button,0,1,1,2)
             self.ddKutuSayisi.present()
             self.ddKutuSayisi.show_all()
+    
+    def on_drag_data_received2(self, widget, drag_context, x, y, data, info, time):
+        if self.Dragliste[0] in self.geciciliste2:
+            pass
+        else:
+            self.ddKutuSayisi2 = Gtk.Window()
+            self.ddKutuSayisi2.set_title("Box")
+            self.ddKutuSayisi2.set_border_width(10)
+            self.ddKutuSayisiTable2 = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+            self.ddKutuSayisi2.add(self.ddKutuSayisiTable2)
+            self.ddKutuSayisi_sayi2 = Gtk.Entry()
+            self.ddKutuSayisi_button2 = Gtk.Button(label ="Send")
+            self.ddKutuSayisi_button2.connect('clicked',self.cartUpdate2)
+            self.ddKutuSayisi_sayi2.set_placeholder_text("Piece")
+            self.ddKutuSayisiTable2.attach(self.ddKutuSayisi_sayi2,0,1,0,1)
+            self.ddKutuSayisiTable2.attach(self.ddKutuSayisi_button2,0,1,1,2)
+            self.ddKutuSayisi2.present()
+            self.ddKutuSayisi2.show_all()
+        
+            
+    
 
     def cartUpdate(self,event):
         self.geciciliste.append(self.Dragliste[0])
@@ -617,6 +684,17 @@ class MyWindow(Gtk.Window):
         self.Dragliste.append(self.ddKutuSayisi_sayi.get_text())
         self.Dragliste.append(a)
         self.cartlistmodel.append(self.Dragliste)
+    
+    def cartUpdate2(self,event):
+        self.geciciliste2.append(self.Dragliste[0])
+        a=self.Dragliste[7]
+        self.Dragliste.pop()
+        self.ddKutuSayisi2.hide()
+        self.Dragliste.append(self.ddKutuSayisi_sayi2.get_text())
+        self.Dragliste.append(a)
+        self.cartlistmodel2.append(self.Dragliste)
+        
+            
         
     #### Veri Tabanı Fonksiyonları ####
 
@@ -800,6 +878,9 @@ class MyWindow(Gtk.Window):
         
         if self.table_type == 'cart':
             menu_item_update.connect("activate",self.cart_guncelle)
+        
+        if self.table_type == 'cart2':
+            menu_item_update.connect("activate",self.cart_guncelle2)
 
         menu.show_all()
 
@@ -844,6 +925,15 @@ class MyWindow(Gtk.Window):
             for row2 in self.geciciliste:
                 if row2[0] == self.secilen_Satir:
                     self.geciciliste.remove(row2)
+                    break
+        if self.table_type == 'cart2':
+            for row in self.cartlistmodel2:
+                if row[0] == self.secilen_Satir:
+                    self.cartlistmodel2.remove(row.iter)
+                    break
+            for row2 in self.geciciliste2:
+                if row2[0] == self.secilen_Satir:
+                    self.geciciliste2.remove(row2)
                     break
             
             
@@ -895,6 +985,12 @@ class MyWindow(Gtk.Window):
             for row in self.cartlistmodel:
                 if row[0] == self.secilen_Satir:
                     row[7]=self.cartGuncelleSayi.get_text()
+                    break
+        if self.table_type == 'cart2':
+            self.cartGuncelleWindow2.hide()
+            for row in self.cartlistmodel2:
+                if row[0] == self.secilen_Satir:
+                    row[7]=self.cartGuncelleSayi2.get_text()
                     break
 
     
