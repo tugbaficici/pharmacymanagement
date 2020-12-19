@@ -197,10 +197,10 @@ class MyWindow(Gtk.Window):
         self.alis_Table.attach(alis_cartCleanButton,2,3,5,6)
         self.alis_Table.attach(self.scroll_cartTable,0,3,6,9)
     
-        self.ilac_tablo()
+        self.facilac_tablo()
         self.alis_Table.attach(alis_medicineLabel,3,10,0,1)
         self.alis_Table.attach(alis_medicineSearch,3,10,1,2)
-        self.alis_Table.attach(self.scroll_medicineTable,3,10,2,10)
+        self.alis_Table.attach(self.scroll_fmedicineTable,3,10,2,10)
         self.alis_Table.attach(self.alis_checkoutButton,0,3,9,10)
 
         self.fabrika_view.show_all()
@@ -508,7 +508,33 @@ class MyWindow(Gtk.Window):
         
         self.scroll_medicineTable = Gtk.ScrolledWindow()
         self.scroll_medicineTable.add(self.ilac_view)
-        self.scroll_medicineTable.show_all()  
+        self.scroll_medicineTable.show_all()
+
+    facilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str)
+
+    def facilac_tablo(self):
+
+        self.facilac_vericekme_query(None)
+        self.facilac_listmodel.clear()
+        for i in range(len(self.ilac_listesi)):
+            self.facilac_listmodel.append(self.facilac_listesi[i])
+
+        self.facilac_view = Gtk.TreeView(model=self.facilac_listmodel)
+        for i, column in enumerate(ilac_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.facilac_view.append_column(col)
+
+        self.facilac_view.connect('button-press-event' , self.tablo_rightClick,'medicines') 
+        self.facilac_view.show_all()        
+
+        self.facilac_view.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
+        self.facilac_view.connect("drag-data-get", self.on_drag_data_get)
+
+        
+        self.scroll_fmedicineTable = Gtk.ScrolledWindow()
+        self.scroll_fmedicineTable.add(self.facilac_view)
+        self.scroll_fmedicineTable.show_all()    
 
     factories_listmodel = Gtk.ListStore(str, str)
     
@@ -683,6 +709,20 @@ class MyWindow(Gtk.Window):
             
             self.ilac_listesi.append(gecici_liste)
 
+    def facilac_vericekme_query(self,facname):
+        if(facname==None):
+            self.cursor.execute("SELECT * FROM medicines")
+        else:
+            self.cursor.execute("SELECT * FROM medicines WHERE FACTORY=?",(facname,))
+        facilac_list = self.cursor.fetchall()
+        self.facilac_listesi = list()
+        for i in list(facilac_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.facilac_listesi.append(gecici_liste)
+
     def fabrika_vericekme_query(self):
         self.cursor.execute("SELECT * FROM factories")
         fabrika_list = self.cursor.fetchall()
@@ -736,21 +776,24 @@ class MyWindow(Gtk.Window):
     
     def tablo_rightClickFac(self,treeview, event,tablename):
         self.table_type = tablename
-        if event.button == 3: # right click
-            pthinfo = treeview.get_path_at_pos(event.x, event.y)
-            if pthinfo != None:
-                path,col,cellx,celly = pthinfo
-                treeview.grab_focus()
-                treeview.set_cursor(path,col,0)
-            selection = treeview.get_selection()
-            (model, iter) = selection.get_selected()
-            self.secilen_Satir=model[iter][0] # seçilen satırı id si
-            print(self.secilen_Satir)
-            print(treeview.get_model())
+        
+        pthinfo = treeview.get_path_at_pos(event.x, event.y)
+        if pthinfo != None:
+            path,col,cellx,celly = pthinfo
+            treeview.grab_focus()
+            treeview.set_cursor(path,col,0)
+        selection = treeview.get_selection()
+        (model, iter) = selection.get_selected()
+        self.secilen_Satir=model[iter][0] # seçilen satırı id si
+        print(self.secilen_Satir)
+        print(model[iter][1])
 
-            menu = self.context_menu()
-            menu.popup( None, None, None,None, event.button, event.get_time())
-            return True
+        self.facilac_listmodel.clear()
+        self.facilac_vericekme_query(model[iter][1])
+
+        for i in range(len(self.facilac_listesi)):
+            self.facilac_listmodel.append(self.facilac_listesi[i])
+
      
     def context_menu(self): # Buton sağ tıkında açılan menü 
         menu = Gtk.Menu()
