@@ -125,8 +125,6 @@ class MyWindow(Gtk.Window):
         self.add(self.kayit_Table)
         self.show_all()
 
-    
-
     def satis_ekrani(self):
         
         self.hasta_tablo()
@@ -146,6 +144,8 @@ class MyWindow(Gtk.Window):
 
         self.ilac_tablo()
         satis_medicineSearch = Gtk.SearchEntry()
+        satis_medicineSearch.connect("activate",self.medicines_searchBar)
+
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
         self.satis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
@@ -173,7 +173,7 @@ class MyWindow(Gtk.Window):
 
         alis_factoriesLabel = Gtk.Label(label = "Factories")
         alis_searchEntry = Gtk.SearchEntry()
-        #satis_searchEntry.connect("activate")
+        alis_searchEntry.connect("activate",self.factory_SearchBar)
 
         alis_factoriesAddButton = Gtk.Button(label = 'Add')
         alis_factoriesAddButton.connect('clicked',self.fabrika_ekle)
@@ -183,6 +183,7 @@ class MyWindow(Gtk.Window):
 
         alis_medicineSearch = Gtk.SearchEntry()
         alis_medicineLabel = Gtk.Label(label = "Medicines")
+        alis_medicineSearch.connect("activate",self.medicines_searchBar2)
 
         self.alis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
 
@@ -579,7 +580,6 @@ class MyWindow(Gtk.Window):
         self.scroll_cartTable.add(self.cart_view)
         self.cart_view.show_all()
 
-
     ###DRAG AND DROP
     def on_drag_data_get(self, widget, drag_context, data, info, time):
         select = widget.get_selection()
@@ -589,7 +589,6 @@ class MyWindow(Gtk.Window):
         for i in model[treeiter]:
             self.Dragliste.append(i)
   
-       
     geciciliste=list()
     def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
         print(self.geciciliste)
@@ -599,28 +598,17 @@ class MyWindow(Gtk.Window):
             self.ddKutuSayisi = Gtk.Window()
             self.ddKutuSayisi.set_title("Box")
             self.ddKutuSayisi.set_border_width(10)
-
             self.ddKutuSayisiTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
             self.ddKutuSayisi.add(self.ddKutuSayisiTable)
-
             self.ddKutuSayisi_sayi = Gtk.Entry()
-            
-
             self.ddKutuSayisi_button = Gtk.Button(label ="Send")
             self.ddKutuSayisi_button.connect('clicked',self.cartUpdate)
-    
             self.ddKutuSayisi_sayi.set_placeholder_text("Piece")
-        
-
             self.ddKutuSayisiTable.attach(self.ddKutuSayisi_sayi,0,1,0,1)
             self.ddKutuSayisiTable.attach(self.ddKutuSayisi_button,0,1,1,2)
-        
-
             self.ddKutuSayisi.present()
             self.ddKutuSayisi.show_all()
 
-            
-        
     def cartUpdate(self,event):
         self.geciciliste.append(self.Dragliste[0])
         a=self.Dragliste[7]
@@ -630,8 +618,6 @@ class MyWindow(Gtk.Window):
         self.Dragliste.append(a)
         self.cartlistmodel.append(self.Dragliste)
         
-          
-
     #### Veri Tabanı Fonksiyonları ####
 
     def baglanti_baslat(self):
@@ -734,7 +720,6 @@ class MyWindow(Gtk.Window):
             
             self.fabrika_listesi.append(gecici_liste)
 
-    
     #### Prio 2 Veri Tabanı Fonksiyonları ####
     
     def kullanici_ekle(self,event):
@@ -933,20 +918,59 @@ class MyWindow(Gtk.Window):
     
     def patients_searchBar(self,searchentry):
         search_text = searchentry.get_text()
-        keys = self.baglantilar.keys()
-        for row in self.listbox.get_children():
-            self.listbox.remove(row)
-        for i in keys:
 
-            if search_text in i:
-                deneme_button=Gtk.Button.new_with_label(i)
-                deneme_button.connect("button-press-event",self.button_clicked)
-                deneme_button.connect("button-press-event",self.button_left_click)
-                self.listbox.add(deneme_button)
-                
-                self.listbox.show_all()
+        self.cursor.execute("SELECT * FROM patients")
+        list_Patients = self.cursor.fetchall()
+        tc_Number = list()
+        for i in range(len(list_Patients)):
+            tc_Number.append(list_Patients[i][1])
 
-        
+        self.listmodel.clear()
+        self.hasta_vericekme_query()
+
+        for j in range(len(tc_Number)):
+            if search_text in str(tc_Number[j]):
+                self.listmodel.append(self.hasta_listesi[j])
+    
+    def medicines_searchBar(self,searchentry):
+        search_text = searchentry.get_text()
+        self.cursor.execute("SELECT NAME FROM medicines")
+        list_MedicineNames = self.cursor.fetchall()
+
+        self.ilac_listmodel.clear()
+        self.ilac_vericekme_query()
+
+        for j in range(len(list_MedicineNames)):
+            if search_text in str(list_MedicineNames[j]):
+                self.ilac_listmodel.append(self.ilac_listesi[j])
+    
+    def medicines_searchBar2(self,searchentry):
+        search_text = searchentry.get_text()
+        self.cursor.execute("SELECT NAME FROM medicines")
+        list_MedicineNames = self.cursor.fetchall()
+
+        self.facilac_listmodel.clear()
+        self.facilac_vericekme_query(None)
+
+        for j in range(len(list_MedicineNames)):
+            if search_text in str(list_MedicineNames[j]):
+                self.facilac_listmodel.append(self.facilac_listesi[j])
+    
+    def factory_SearchBar(self,searchentry):
+        search_text = searchentry.get_text()
+        self.cursor.execute("SELECT NAME FROM factories")
+        list_factoryNames = self.cursor.fetchall()
+
+        self.factories_listmodel.clear()
+        self.fabrika_vericekme_query()
+
+        for j in range(len(list_factoryNames)):
+            if search_text in str(list_factoryNames[j]):
+                self.factories_listmodel.append(self.fabrika_listesi[j])
+    
+
+
+
     def on_click_clean(self,event):
         self.cartlistmodel.clear()
         self.geciciliste.clear()
