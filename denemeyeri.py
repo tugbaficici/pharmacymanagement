@@ -8,6 +8,7 @@ from gi.repository import Gdk, GLib,Pango
 
 hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
 ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY"]
+cart_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY","COUNT"]
 fabrika_columns = ["ID","NAME"]
 
 TARGETS = [('MY_TREE_MODEL_ROW', Gtk.TargetFlags(2) , 0),
@@ -334,6 +335,30 @@ class MyWindow(Gtk.Window):
         self.update_FactoryWindow.present()
         self.update_FactoryWindow.show_all()
 
+    def cart_guncelle(self,event):
+        self.cartGuncelleWindow = Gtk.Window()
+        self.cartGuncelleWindow.set_title("Box")
+        self.cartGuncelleWindow.set_border_width(10)
+
+        self.cartGuncelleWindowTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+        self.cartGuncelleWindow.add(self.cartGuncelleWindowTable)
+
+        self.cartGuncelleSayi = Gtk.Entry()
+            
+
+        self.cartGuncelleButton = Gtk.Button(label ="Send")
+        self.cartGuncelleButton.connect('clicked',self.onclick_Update)
+    
+        self.cartGuncelleSayi.set_placeholder_text("Piece")
+        
+
+        self.cartGuncelleWindowTable.attach(self.cartGuncelleSayi,0,1,0,1)
+        self.cartGuncelleWindowTable.attach(self.cartGuncelleButton,0,1,1,2)
+        
+
+        self.cartGuncelleWindow.present()
+        self.cartGuncelleWindow.show_all()
+
     def hasta_guncelle(self,event):
         self.cursor.execute("SELECT * FROM patients WHERE ID = ?",(self.secilen_Satir,))
         liste = list()
@@ -501,20 +526,23 @@ class MyWindow(Gtk.Window):
         self.scroll_factoriesTable.add(self.fabrika_view)
         self.scroll_factoriesTable.show_all()
 
-    cartlistmodel = Gtk.ListStore(str, str, str ,str ,str, str,str,str)
+    cartlistmodel = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
     def cart_tablo(self):
         
         #for i in range(len(self.ilac_listesi)):
         #    listmodel.append(self.ilac_listesi[i])
 
         self.cart_view = Gtk.TreeView(model=self.cartlistmodel)
-        for i, column in enumerate(ilac_columns):
+        for i, column in enumerate(cart_columns):
             cell = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.cart_view.append_column(col)
 
         self.cart_view.enable_model_drag_dest(TARGETS, DRAG_ACTION)
         self.cart_view.connect("drag-data-received", self.on_drag_data_received)
+
+        self.cart_view.connect('button-press-event' , self.tablo_rightClick,'cart')
+        self.cart_view.show_all()
 
         self.scroll_cartTable = Gtk.ScrolledWindow()
         self.scroll_cartTable.add(self.cart_view)
@@ -533,15 +561,44 @@ class MyWindow(Gtk.Window):
        
     geciciliste=list()
     def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
-        
-        if self.Dragliste in self.geciciliste:
+        print(self.geciciliste)
+        if self.Dragliste[0] in self.geciciliste:
             pass
         else:
-            self.geciciliste.append(self.Dragliste)
-            self.cartlistmodel.append(self.Dragliste)
-        
-    
+            self.ddKutuSayisi = Gtk.Window()
+            self.ddKutuSayisi.set_title("Box")
+            self.ddKutuSayisi.set_border_width(10)
 
+            self.ddKutuSayisiTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+            self.ddKutuSayisi.add(self.ddKutuSayisiTable)
+
+            self.ddKutuSayisi_sayi = Gtk.Entry()
+            
+
+            self.ddKutuSayisi_button = Gtk.Button(label ="Send")
+            self.ddKutuSayisi_button.connect('clicked',self.cartUpdate)
+    
+            self.ddKutuSayisi_sayi.set_placeholder_text("Piece")
+        
+
+            self.ddKutuSayisiTable.attach(self.ddKutuSayisi_sayi,0,1,0,1)
+            self.ddKutuSayisiTable.attach(self.ddKutuSayisi_button,0,1,1,2)
+        
+
+            self.ddKutuSayisi.present()
+            self.ddKutuSayisi.show_all()
+
+            
+        
+    def cartUpdate(self,event):
+        self.geciciliste.append(self.Dragliste[0])
+        a=self.Dragliste[7]
+        self.Dragliste.pop()
+        self.ddKutuSayisi.hide()
+        self.Dragliste.append(self.ddKutuSayisi_sayi.get_text())
+        self.Dragliste.append(a)
+        self.cartlistmodel.append(self.Dragliste)
+        
           
 
     #### Veri Tabanı Fonksiyonları ####
@@ -689,6 +746,9 @@ class MyWindow(Gtk.Window):
 
         if self.table_type == 'factories':
             menu_item_update.connect("activate",self.factory_guncelle)
+        
+        if self.table_type == 'cart':
+            menu_item_update.connect("activate",self.cart_guncelle)
 
         menu.show_all()
 
@@ -724,6 +784,18 @@ class MyWindow(Gtk.Window):
 
             for i in range(len(self.fabrika_listesi)):
                 self.factories_listmodel.append(self.fabrika_listesi[i])
+
+        if self.table_type == 'cart':
+            for row in self.cartlistmodel:
+                if row[0] == self.secilen_Satir:
+                    self.cartlistmodel.remove(row.iter)
+                    break
+            for row2 in self.geciciliste:
+                if row2[0] == self.secilen_Satir:
+                    self.geciciliste.remove(row2)
+                    break
+            
+            
 
     def onclick_Update(self,action):
         if self.table_type == 'patients':
@@ -766,6 +838,14 @@ class MyWindow(Gtk.Window):
 
             for i in range(len(self.ilac_listesi)):
                 self.ilac_listmodel.append(self.ilac_listesi[i])
+
+        if self.table_type == 'cart':
+            self.cartGuncelleWindow.hide()
+            for row in self.cartlistmodel:
+                if row[0] == self.secilen_Satir:
+                    row[7]=self.cartGuncelleSayi.get_text()
+                    break
+
     
     def ilac_addButtonEvent(self,event):
         self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE) Values(?,?,?,?,?)",
