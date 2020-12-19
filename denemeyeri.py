@@ -125,6 +125,8 @@ class MyWindow(Gtk.Window):
         self.add(self.kayit_Table)
         self.show_all()
 
+    
+
     def satis_ekrani(self):
         
         self.hasta_tablo()
@@ -140,8 +142,9 @@ class MyWindow(Gtk.Window):
         self.cart_tablo()
         satis_cartLabel = Gtk.Label(label = "Cart")
         satis_cartCleanButton = Gtk.Button(label = "Clean")
+        satis_cartCleanButton.connect('clicked',self.on_click_clean)
 
-        self.ilac_tablo()
+        self.ilac_tablo(None,None)
         satis_medicineSearch = Gtk.SearchEntry()
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
@@ -194,7 +197,7 @@ class MyWindow(Gtk.Window):
         self.alis_Table.attach(alis_cartCleanButton,2,3,5,6)
         self.alis_Table.attach(self.scroll_cartTable,0,3,6,9)
     
-        self.ilac_tablo()
+        self.ilac_tablo(None,None)
         self.alis_Table.attach(alis_medicineLabel,3,10,0,1)
         self.alis_Table.attach(alis_medicineSearch,3,10,1,2)
         self.alis_Table.attach(self.scroll_medicineTable,3,10,2,10)
@@ -223,7 +226,7 @@ class MyWindow(Gtk.Window):
         self.ilac_addTable.show_all()
     
     def ilac_listWindow(self):
-        self.ilac_tablo()
+        self.ilac_tablo(None,None)
         self.ilac_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
         self.ilac_listTable.attach(self.scroll_medicineTable,0,10,0,10)
         self.ilac_listTable.show_all()
@@ -483,8 +486,14 @@ class MyWindow(Gtk.Window):
 
     ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str)
 
-    def ilac_tablo(self):
-        self.ilac_vericekme_query()
+    def ilac_tablo(self,aranan,facaranan):
+        if(aranan==None and facaranan!=None):
+            self.ilac_vericekme_query(facaranan,None)
+        elif(aranan!=None and facaranan!=None):
+            self.ilac_vericekme_query(facaranan,aranan)
+        else:
+            self.ilac_vericekme_query(None,None)
+
         self.ilac_listmodel.clear()
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
@@ -501,12 +510,13 @@ class MyWindow(Gtk.Window):
         self.ilac_view.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
         self.ilac_view.connect("drag-data-get", self.on_drag_data_get)
 
-        
+            
         self.scroll_medicineTable = Gtk.ScrolledWindow()
         self.scroll_medicineTable.add(self.ilac_view)
         self.scroll_medicineTable.show_all()  
 
     factories_listmodel = Gtk.ListStore(str, str)
+    
     def fabrika_tablo(self):
         self.fabrika_vericekme_query()
         self.factories_listmodel.clear()
@@ -519,8 +529,10 @@ class MyWindow(Gtk.Window):
             col = Gtk.TreeViewColumn(column, cell, text=i)
             self.fabrika_view.append_column(col)
         
-        self.fabrika_view.connect('button-press-event' , self.tablo_rightClick,'factories')
+        self.fabrika_view.connect('button-press-event' , self.tablo_rightClickFac,'factories')
         self.fabrika_view.show_all()
+
+
 
         self.scroll_factoriesTable = Gtk.ScrolledWindow()
         self.scroll_factoriesTable.add(self.fabrika_view)
@@ -667,8 +679,13 @@ class MyWindow(Gtk.Window):
             
             self.hasta_listesi.append(gecici_liste)
 
-    def ilac_vericekme_query(self):
-        self.cursor.execute("SELECT * FROM medicines")
+    def ilac_vericekme_query(self,fac,ar):
+        if(ar==None and ar!=fac):
+            self.cursor.execute("SELECT * FROM medicines where FACTORY=?",(fac,))
+        elif(fac!=None and ar!=None):
+            self.cursor.execute("SELECT * FROM medicines where FACTORY=? and NAME=?",(fac,ar))
+        else:
+            self.cursor.execute("SELECT * FROM medicines")
         ilac_list = self.cursor.fetchall()
         self.ilac_listesi = list()
         for i in list(ilac_list):
@@ -728,6 +745,31 @@ class MyWindow(Gtk.Window):
             menu = self.context_menu()
             menu.popup( None, None, None,None, event.button, event.get_time())
             return True
+    
+    def tablo_rightClickFac(self,treeview, event,tablename):
+        self.table_type = tablename
+        if event.button == 3: # right click
+            pthinfo = treeview.get_path_at_pos(event.x, event.y)
+            if pthinfo != None:
+                path,col,cellx,celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path,col,0)
+            selection = treeview.get_selection()
+            (model, iter) = selection.get_selected()
+            self.secilen_Satir=model[iter][0] # seçilen satırı id si
+            print(self.secilen_Satir)
+            print(treeview.get_model())
+
+            
+            self.ilac_listmodel.clear()
+            self.ilac_vericekme_query(model[iter][1],None)
+
+            for i in range(len(self.ilac_listesi)):
+                self.ilac_listmodel.append(self.ilac_listesi[i])
+
+            menu = self.context_menu()
+            menu.popup( None, None, None,None, event.button, event.get_time())
+            return True
      
     def context_menu(self): # Buton sağ tıkında açılan menü 
         menu = Gtk.Menu()
@@ -770,7 +812,7 @@ class MyWindow(Gtk.Window):
             self.con.commit()
      
             self.ilac_listmodel.clear()
-            self.ilac_vericekme_query()
+            self.ilac_vericekme_query(None,None)
 
             for i in range(len(self.ilac_listesi)):
                 self.ilac_listmodel.append(self.ilac_listesi[i])
@@ -834,7 +876,7 @@ class MyWindow(Gtk.Window):
 
             self.update_MedicineWindow.hide()
             self.ilac_listmodel.clear()
-            self.ilac_vericekme_query()
+            self.ilac_vericekme_query(None,None)
 
             for i in range(len(self.ilac_listesi)):
                 self.ilac_listmodel.append(self.ilac_listesi[i])
@@ -860,7 +902,7 @@ class MyWindow(Gtk.Window):
         self.ilac_priceEntry.set_text('')
 
         self.ilac_listmodel.clear()
-        self.ilac_vericekme_query()
+        self.ilac_vericekme_query(None,None)
 
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
@@ -881,8 +923,9 @@ class MyWindow(Gtk.Window):
                 self.listbox.show_all()
 
         
-    
-        
+    def on_click_clean(self,event):
+        self.cartlistmodel.clear()
+        self.geciciliste.clear()
 
 window = MyWindow()
 window.show_all()

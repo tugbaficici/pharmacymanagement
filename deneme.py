@@ -1,358 +1,939 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import gi
-import os
-import getpass
-from stat import S_ISDIR, S_ISREG
+import gi,sqlite3
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk, GLib
-gi.require_version('Vte', '2.91')
-from gi.repository import Vte
+from gi.repository import Gdk, GLib,Pango
 
-from gi.repository import GObject
-from pathlib import Path
-from paramiko import SSHClient
-from scp import SCPClient
-import time
-import paramiko
-from subprocess import run, PIPE
-import glob
-from file_transfer import onRowCollapsed,onRowExpanded,populateFileSystemTreeStore,on_tree_selection_changed 
-from ssh_file_transfer import onRowCollapsed2,onRowExpanded2,populateFileSystemTreeStore2,on_tree_selection_changed2,ssh_connect
-from gi.repository.GdkPixbuf import Pixbuf
-import pexpect
-import subprocess
-import signal
-
-HOME = "HOME"
-SHELLS = [ "/bin/bash" ]
-DRAG_ACTION = Gdk.DragAction.COPY
-ICONSIZE = Gtk.IconSize.MENU
-get_icon = lambda name: Gtk.Image.new_from_icon_name(name, ICONSIZE)
+hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
+ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY"]
+cart_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY","COUNT"]
+fabrika_columns = ["ID","NAME"]
 
 TARGETS = [('MY_TREE_MODEL_ROW', Gtk.TargetFlags(2) , 0),
 ('text/plain', 0, 1),
 ('TEXT', 0, 2),('STRING', 0, 3),]
+DRAG_ACTION = Gdk.DragAction.COPY
 
 class MyWindow(Gtk.Window):
 
-    notebook = Gtk.Notebook()
-    home = str(Path.home())
-    baglantilar = dict() # Goal 1
-    __gsignals__ = {
-        "close-tab": (GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
-    }
-
     def __init__(self):
+
         Gtk.Window.__init__(self)
-        self.set_default_size(750, 500)
+        self.set_default_size(1300, 700)
         self.connect("destroy", Gtk.main_quit)
-        self.set_title("VALF")
+        self.set_title("Pharmacy Management System")
         self.main()
-        self.number_list = [1]
-         
+
     def main(self):
-        table = Gtk.Table(n_rows=10, n_columns=30, homogeneous=True) # Main table tanımlanması
-        self.add(table)
-        self.listbox = Gtk.ListBox() # Bağlantıların listelendiği listbox tanımlanması
-        self.listbox_add_items()
-        self.set_icon_from_file('/usr/share/icons/valf/icon.png')
+        self.baglanti_baslat()
+        self.giris_ekrani()
 
-        searchentry = Gtk.SearchEntry() # Searchbox tanımlanması
-        searchentry.connect("activate",self.on_search_activated)
+    #### Ekranlar #####
 
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_border_width(5)
-        scrolled_window.set_policy(
-            Gtk.PolicyType.ALWAYS, Gtk.PolicyType.ALWAYS)
-        scrolled_window.add(self.listbox) # Bağlantı listbox'ına scrollview eklenmesi
-
-        new_window_button = Gtk.Button(label ="Yeni Bağlantı")
-        new_window_button.connect('clicked',self.add_new_host_window)
-        self.toolbar()
+    def ana_ekran(self):
+        self.notebook = Gtk.Notebook()
+        self.add(self.notebook)
         
-        table.attach(self.box,0,10,0,1)
-        table.attach(new_window_button,5,10,9,10)
-        table.attach(scrolled_window,0,10,2,9)
-        table.attach(searchentry,0,10,1,2)
-        table.attach(self.notebook,10,30,0,10)
-        
-        self.notebook.show_all()
-        self.listbox.show_all()
-        searchentry.show_all()
+        self.satis_ekrani()
+        self.alis_ekrani()
+        self.ilac_ekrani()
 
         self.page1 = Gtk.Box()
         self.page1.set_border_width(10)
-        self.page1.add(Gtk.Label(label = "İstediğiniz bağlantıya sol tıkladığınızda,\nbağlantı detaylarınız burada listelenecek."))
-        self.notebook.append_page(self.page1, Gtk.Label(label = "Ana Sayfa"))
+        self.page1.set_homogeneous(True)
+        self.page1.add(self.satis_Table)
+        self.notebook.append_page(self.page1, Gtk.Label(label="Sell"))
+
+        self.page2 = Gtk.Box()
+        self.page2.set_border_width(10)
+        self.page2.set_homogeneous(True)
+        self.page2.add(self.alis_Table)
+        self.notebook.append_page(self.page2, Gtk.Label(label="Buy"))
+
+        self.page3 = Gtk.Box()
+        self.page3.set_border_width(10)
+        self.page3.set_homogeneous(True)
+        self.page3.add(self.ilac_notebook)
+        self.notebook.append_page(self.page3, Gtk.Label(label="Medicines"))
+
+        self.hasta_listWindow()
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(20)
+        self.page4.set_homogeneous(True)
+        self.page4.add(self.hasta_listTable)
+        self.notebook.append_page(self.page4, Gtk.Label(label="Patients"))
+
+        self.page4 = Gtk.Box()
+        self.page4.set_border_width(10)
+        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.notebook.append_page(self.page4, Gtk.Label(label="Settings"))       
     
-    ########################## Config Dosyası İşlemleri #####################################
+        self.notebook.show_all()
 
-    def read_config(self): # Conf dosyasını gezer, değerleri okur, dictionary'e atar.
-        try : 
-            self.baglantilar.clear()
-            with open(self.home+'/.ssh/config','r') as f:    
-                for line in f: # Goal 2 
-                    if 'Host ' in line: # Goal 3
-                        if line != '\n':
-                            
-                            (key,value) = line.split()
-                            hostline = value
-                            self.baglantilar[hostline] = dict() # Goal 3
-                            self.baglantilar[hostline][key] = value # Goal 5
+    def giris_ekrani(self):
 
-                        else:
-                            continue
-                        
-                    else: # Goal 4
-                        if line != '\n':
-                            (key,value) = line.split() 
-                            self.baglantilar[hostline][key] = value
-                    
-                        else:
-                            continue
+        self.main_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        main_Label = Gtk.Label(label = "Open Source Pharmacy Management Sysem")
+
+        main_IdLabel = Gtk.Label(label = "ID : ")
+        self.main_IdEntry = Gtk.Entry()
+
+        main_PassLabel = Gtk.Label(label = "Password : ")
+        self.main_PassEntry = Gtk.Entry()
+        self.main_PassEntry.set_visibility(False)
+
+        self.main_LoginButton = Gtk.Button(label = "Login")
+        self.main_LoginButton.connect('clicked',self.kullanici_giris)
+        self.main_RegisterButton = Gtk.Button(label = "Register")
+        self.main_RegisterButton.connect('clicked',self.kullanici_kayit)
+
+        self.main_Table.attach(main_Label,0,10,0,2)
+        self.main_Table.attach(main_IdLabel,0,4,3,4)
+        self.main_Table.attach(main_PassLabel,0,4,4,5)
+        self.main_Table.attach(self.main_IdEntry,5,8,3,4)
+        self.main_Table.attach(self.main_PassEntry,5,8,4,5)
+        self.main_Table.attach(self.main_LoginButton,4,6,6,7)
+        self.main_Table.attach(self.main_RegisterButton,4,6,7,8)
+
+        self.add(self.main_Table)
+        self.show_all()
+    
+    def kayit_ekrani(self):
+
+        self.kayit_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        kayit_Label = Gtk.Label(label = "Open Source Pharmacy Management Sysem\nRegister")
+
+        kayit_IdLabel = Gtk.Label(label = "ID : ")
+        self.kayit_IdEntry = Gtk.Entry()
+
+        kayit_PassLabel = Gtk.Label(label = "Password : ")
+        self.kayit_PassEntry = Gtk.Entry()
+        self.kayit_PassEntry.set_visibility(False)
+
+        self.kayit_RegisterButton = Gtk.Button(label = "Register")
+        self.kayit_RegisterButton.connect('clicked',self.kullanici_ekle)
+
+        self.kayit_Table.attach(kayit_Label,0,10,0,2)
+        self.kayit_Table.attach(kayit_IdLabel,0,4,3,4)
+        self.kayit_Table.attach(kayit_PassLabel,0,4,4,5)
+        self.kayit_Table.attach(self.kayit_IdEntry,5,8,3,4)
+        self.kayit_Table.attach(self.kayit_PassEntry,5,8,4,5)
+        self.kayit_Table.attach(self.kayit_RegisterButton,4,6,6,7)
+
+        self.add(self.kayit_Table)
+        self.show_all()
+
+    
+
+    def satis_ekrani(self):
         
-        except:
-            ssh_path = self.home + '/.ssh'
-            os.mkdir(ssh_path)
+        self.hasta_tablo()
+        self.satis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
 
-            files_list = ['/config','/known_hosts','/authorized_keys']
-            for i in files_list:
+        satis_patienceLabel = Gtk.Label(label = "Patients")
+        satis_patientSearch = Gtk.SearchEntry()
+        satis_patientSearch.connect("activate",self.patients_searchBar)
 
-                Path(ssh_path+ i).touch()
+        satis_patienceAddButton = Gtk.Button(label = "Add")
+        satis_patienceAddButton.connect('clicked',self.hasta_ekle)
+        
+        self.cart_tablo()
+        satis_cartLabel = Gtk.Label(label = "Cart")
+        satis_cartCleanButton = Gtk.Button(label = "Clean")
+        satis_cartCleanButton.connect('clicked',self.on_click_clean)
 
-    def write_config(self): # RAM'de tutulan dictionary değerlerini dosyaya yazar.
-        with open(self.home+'/.ssh/config','w') as f:
-            for p_id, p_info in self.baglantilar.items():
-                for key in p_info:
-                    f.write(key+" "+p_info[key]+"\n")
+        self.ilac_tablo()
+        satis_medicineSearch = Gtk.SearchEntry()
+        satis_medicineLabel = Gtk.Label(label = "Medicines")
+
+        self.satis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
+
+        self.satis_Table.attach(satis_patienceLabel,0,3,0,1)
+        self.satis_Table.attach(satis_patientSearch,0,2.5,1,2)
+        self.satis_Table.attach(satis_patienceAddButton,2,3,1,2)
+        self.satis_Table.attach(self.scroll_patientTable,0,3,2,5)
+
+        self.satis_Table.attach(satis_cartLabel,0,2,5,6)
+        self.satis_Table.attach(satis_cartCleanButton,2,3,5,6)
+        self.satis_Table.attach(self.scroll_cartTable,0,3,6,9)
     
-    ########################## Listbox İşlemleri #####################################
-                
+        self.satis_Table.attach(satis_medicineLabel,3,10,0,1)
+        self.satis_Table.attach(satis_medicineSearch,3,10,1,2)
+
+        self.satis_Table.attach(self.scroll_medicineTable,3,10,2,10)
+        self.satis_Table.attach(self.satis_checkoutButton,0,3,9,10)
+
+        self.view.show_all()
+        self.satis_Table.show_all()
+    
+    def alis_ekrani(self):
+        self.alis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+
+        alis_factoriesLabel = Gtk.Label(label = "Factories")
+        alis_searchEntry = Gtk.SearchEntry()
+        #satis_searchEntry.connect("activate")
+
+        alis_factoriesAddButton = Gtk.Button(label = 'Add')
+        alis_factoriesAddButton.connect('clicked',self.fabrika_ekle)
+        
+        alis_cartLabel = Gtk.Label(label = "Cart")
+        alis_cartCleanButton = Gtk.Button(label = "Clean")
+
+        alis_medicineSearch = Gtk.SearchEntry()
+        alis_medicineLabel = Gtk.Label(label = "Medicines")
+
+        self.alis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
+
+        self.fabrika_tablo()
+        self.alis_Table.attach(alis_factoriesLabel,0,3,0,1)
+        self.alis_Table.attach(alis_searchEntry,0,2.5,1,2)
+        self.alis_Table.attach(alis_factoriesAddButton,2,3,1,2)
+        self.alis_Table.attach(self.scroll_factoriesTable,0,3,2,5)
+
+        self.cart_tablo()
+        self.alis_Table.attach(alis_cartLabel,0,2,5,6)
+        self.alis_Table.attach(alis_cartCleanButton,2,3,5,6)
+        self.alis_Table.attach(self.scroll_cartTable,0,3,6,9)
+    
+        self.facilac_tablo()
+        self.alis_Table.attach(alis_medicineLabel,3,10,0,1)
+        self.alis_Table.attach(alis_medicineSearch,3,10,1,2)
+        self.alis_Table.attach(self.scroll_fmedicineTable,3,10,2,10)
+        self.alis_Table.attach(self.alis_checkoutButton,0,3,9,10)
+
+        self.fabrika_view.show_all()
+        self.alis_Table.show_all()
+    
+    def ilac_ekrani(self):
+        self.ilac_notebook = Gtk.Notebook()
+
+        self.ilac_addWindow()
+        self.ilac_addPage = Gtk.Box()
+        self.ilac_addPage.set_border_width(10)
+        self.ilac_addPage.set_homogeneous(True)
+        self.ilac_addPage.add(self.ilac_addTable)
+        self.ilac_notebook.append_page(self.ilac_addPage, Gtk.Label(label="Add"))
+
+        self.ilac_listWindow()
+        self.ilac_listPage = Gtk.Box()
+        self.ilac_listPage.set_border_width(10)
+        self.ilac_listPage.set_homogeneous(True)
+        self.ilac_listPage.add(self.ilac_listTable)
+        self.ilac_notebook.append_page(self.ilac_listPage, Gtk.Label(label="List"))
+
+        self.ilac_addTable.show_all()
+    
+    def ilac_listWindow(self):
+        self.ilac_tablo()
+        self.ilac_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+        self.ilac_listTable.attach(self.scroll_medicineTable,0,10,0,10)
+        self.ilac_listTable.show_all()
+    
+    def ilac_addWindow(self):
+        self.ilac_addTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+
+        self.ilac_nameEntry = Gtk.Entry()
+        self.ilac_doseEntry = Gtk.Entry()
+        self.ilac_activeEntry = Gtk.Entry()
+        self.ilac_pieceEntry = Gtk.Entry()
+        self.ilac_priceEntry = Gtk.Entry()
+        
+
+        ilac_nameLabel = Gtk.Label(label = "Name :")
+        ilac_doseLabel = Gtk.Label(label = "Dose :")
+        ilac_activeLabel = Gtk.Label(label = "Active :")
+        ilac_pieceLabel = Gtk.Label(label = "Piece :")
+        ilac_priceLabel = Gtk.Label(label = "Price :")
+        
+
+        self.ilac_addButton = Gtk.Button(label = "Add") 
+        self.ilac_addButton.connect('clicked',self.ilac_addButtonEvent)    
+        
+        self.ilac_addTable.attach(ilac_nameLabel,1,2,2,3)
+        self.ilac_addTable.attach(self.ilac_nameEntry,3,5,2,3)
+
+        self.ilac_addTable.attach(ilac_doseLabel,6,7,2,3)
+        self.ilac_addTable.attach(self.ilac_doseEntry,8,10,2,3)
+
+        self.ilac_addTable.attach(ilac_activeLabel,1,2,4,5)
+        self.ilac_addTable.attach(self.ilac_activeEntry,3,5,4,5)
+
+        self.ilac_addTable.attach(ilac_pieceLabel,6,7,4,5)
+        self.ilac_addTable.attach(self.ilac_pieceEntry,8,10,4,5)
+
+        self.ilac_addTable.attach(ilac_priceLabel,1,2,6,7)
+        self.ilac_addTable.attach(self.ilac_priceEntry,3,5,6,7)
+
+        self.ilac_addTable.attach(self.ilac_addButton,8,10,6,7)
+
+        self.ilac_addTable.show_all()
+    
+    def hasta_listWindow(self):
+        self.hasta_tablo()
+        self.hasta_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+        self.hasta_listTable.attach(self.scroll_patientTable,0,10,0,10)
+        self.hasta_listTable.show_all()
+
+    ### Yan Ekranlar ###
+    def hasta_ekle(self,event):
+        self.add_PatientWindow = Gtk.Window()
+        self.add_PatientWindow.set_title("Add New Patient")
+        self.add_PatientWindow.set_border_width(10)
+
+        add_PatientWindowTable = Gtk.Table(n_rows=9, n_columns=0, homogeneous=True)
+        self.add_PatientWindow.add(add_PatientWindowTable)
+
+        self.tcnumber = Gtk.Entry()
+        self.name = Gtk.Entry()
+        self.surname = Gtk.Entry()
+        self.email = Gtk.Entry()
+
+        self.add_PatientButton = Gtk.Button(label ="Send")
+        self.add_PatientButton.connect('clicked',self.add_NewPatient)
+  
+        self.tcnumber.set_placeholder_text("TC Number (11)")
+        self.name.set_placeholder_text("Patient Name")
+        self.surname.set_placeholder_text("Patient Surname")
+        self.email.set_placeholder_text("Email (Optional)")
+
+        add_PatientWindowTable.attach(self.tcnumber,0,1,0,1)
+        add_PatientWindowTable.attach(self.name,0,1,2,3)
+        add_PatientWindowTable.attach(self.surname,0,1,4,5)
+        add_PatientWindowTable.attach(self.email,0,1,6,7)
+        add_PatientWindowTable.attach(self.add_PatientButton,0,1,8,9)
+
+        self.add_PatientWindow.present()
+        self.add_PatientWindow.show_all()
+    
+    def factory_guncelle(self,event):
+        self.cursor.execute("SELECT * FROM factories WHERE ID = ?",(self.secilen_Satir,))
+        liste = list()
+        liste = self.cursor.fetchall()
+
+        self.update_FactoryWindow = Gtk.Window()
+        self.update_FactoryWindow.set_title("Update Factory")
+        self.update_FactoryWindow.set_border_width(10)
+
+        update_FactoryWindowTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+        self.update_FactoryWindow.add(update_FactoryWindowTable)
+
+        self.update_factoryname = Gtk.Entry()
+        
+
+        self.update_factoryname.set_text(str(liste[0][1]))
+        
+
+        self.update_FactoryButton = Gtk.Button(label ="Send")
+        self.update_FactoryButton.connect('clicked',self.onclick_Update)
+  
+        self.update_factoryname.set_placeholder_text("Factory Name")
+       
+
+        update_FactoryWindowTable.attach(self.update_factoryname,0,1,0,1)
+        update_FactoryWindowTable.attach(self.update_FactoryButton,0,1,1,2)
+      
+
+        self.update_FactoryWindow.present()
+        self.update_FactoryWindow.show_all()
+
+    def cart_guncelle(self,event):
+        self.cartGuncelleWindow = Gtk.Window()
+        self.cartGuncelleWindow.set_title("Box")
+        self.cartGuncelleWindow.set_border_width(10)
+
+        self.cartGuncelleWindowTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+        self.cartGuncelleWindow.add(self.cartGuncelleWindowTable)
+
+        self.cartGuncelleSayi = Gtk.Entry()
+            
+
+        self.cartGuncelleButton = Gtk.Button(label ="Send")
+        self.cartGuncelleButton.connect('clicked',self.onclick_Update)
+    
+        self.cartGuncelleSayi.set_placeholder_text("Piece")
+        
+
+        self.cartGuncelleWindowTable.attach(self.cartGuncelleSayi,0,1,0,1)
+        self.cartGuncelleWindowTable.attach(self.cartGuncelleButton,0,1,1,2)
+        
+
+        self.cartGuncelleWindow.present()
+        self.cartGuncelleWindow.show_all()
+
+    def hasta_guncelle(self,event):
+        self.cursor.execute("SELECT * FROM patients WHERE ID = ?",(self.secilen_Satir,))
+        liste = list()
+        liste = self.cursor.fetchall()
+
+        self.update_PatientWindow = Gtk.Window()
+        self.update_PatientWindow.set_title("Update Patient")
+        self.update_PatientWindow.set_border_width(10)
+
+        update_PatientWindowTable = Gtk.Table(n_rows=9, n_columns=0, homogeneous=True)
+        self.update_PatientWindow.add(update_PatientWindowTable)
+
+        self.update_tcnumber = Gtk.Entry()
+        self.update_name = Gtk.Entry()
+        self.update_surname = Gtk.Entry()
+        self.update_email = Gtk.Entry()
+
+        self.update_tcnumber.set_text(str(liste[0][1]))
+        self.update_name.set_text(str(liste[0][2]))
+        self.update_surname.set_text(str(liste[0][3]))
+        self.update_email.set_text(str(liste[0][4]))
+
+        self.update_PatientButton = Gtk.Button(label ="Send")
+        self.update_PatientButton.connect('clicked',self.onclick_Update)
+  
+        self.update_tcnumber.set_placeholder_text("TC Number (11)")
+        self.update_name.set_placeholder_text("Patient Name")
+        self.update_surname.set_placeholder_text("Patient Surname")
+        self.update_email.set_placeholder_text("Email (Optional)")
+
+        update_PatientWindowTable.attach(self.update_tcnumber,0,1,0,1)
+        update_PatientWindowTable.attach(self.update_name,0,1,2,3)
+        update_PatientWindowTable.attach(self.update_surname,0,1,4,5)
+        update_PatientWindowTable.attach(self.update_email,0,1,6,7)
+        update_PatientWindowTable.attach(self.update_PatientButton,0,1,8,9)
+
+        self.update_PatientWindow.present()
+        self.update_PatientWindow.show_all()
+    
+    def ilac_guncelle(self,event):
+        self.cursor.execute("SELECT * FROM medicines WHERE ID = ?",(self.secilen_Satir,))
+        liste = list()
+        liste = self.cursor.fetchall()
+
+        self.update_MedicineWindow= Gtk.Window()
+        self.update_MedicineWindow.set_title("Update Patient")
+        self.update_MedicineWindow.set_border_width(10)
+
+        update_MedicineWindowTable = Gtk.Table(n_rows=11, n_columns=0, homogeneous=True)
+        self.update_MedicineWindow.add(update_MedicineWindowTable)
+
+        self.update_Medicinename = Gtk.Entry()
+        self.update_Medicinedose = Gtk.Entry()
+        self.update_Medicineactive = Gtk.Entry()
+        self.update_Medicinepiece = Gtk.Entry()
+        self.update_Medicineprice = Gtk.Entry()
+
+        self.update_Medicinename.set_text(str(liste[0][1]))
+        self.update_Medicinedose.set_text(str(liste[0][2]))
+        self.update_Medicineactive.set_text(str(liste[0][3]))
+        self.update_Medicinepiece.set_text(str(liste[0][4]))
+        self.update_Medicineprice.set_text(str(liste[0][5]))
+
+        self.update_Medicinebutton = Gtk.Button(label ="Send")
+        self.update_Medicinebutton.connect('clicked',self.onclick_Update)
+  
+        self.update_Medicinename.set_placeholder_text("Medicine Name")
+        self.update_Medicinedose.set_placeholder_text("Medicine Dose")
+        self.update_Medicineactive.set_placeholder_text("Medicine Active")
+        self.update_Medicinepiece.set_placeholder_text("Medicine Piece")
+        self.update_Medicineprice.set_placeholder_text("Medicine Price")
+
+        update_MedicineWindowTable.attach(self.update_Medicinename,0,1,0,1)
+        update_MedicineWindowTable.attach(self.update_Medicinedose,0,1,2,3)
+        update_MedicineWindowTable.attach(self.update_Medicineactive,0,1,4,5)
+        update_MedicineWindowTable.attach(self.update_Medicinepiece,0,1,6,7)
+        update_MedicineWindowTable.attach(self.update_Medicineprice,0,1,8,9)
+        update_MedicineWindowTable.attach(self.update_Medicinebutton,0,1,10,11)
+
+        self.update_MedicineWindow.present()
+        self.update_MedicineWindow.show_all()
+
+    def fabrika_ekle(self,event):
+        self.add_factoriesWindow = Gtk.Window()
+        self.add_factoriesWindow.set_title("Add New Factory")
+        self.add_factoriesWindow.set_border_width(10)
+
+        add_factoriesWindowTable = Gtk.Table(n_rows=3, n_columns=0, homogeneous=True)
+        self.add_factoriesWindow.add(add_factoriesWindowTable)
+
+        self.factory_Name = Gtk.Entry()
+        self.add_factorybutton = Gtk.Button(label ="Send")
+        self.add_factorybutton.connect('clicked',self.add_NewFactory)
+  
+        self.factory_Name.set_placeholder_text("Factory Name")
+        add_factoriesWindowTable.attach(self.factory_Name,0,1,0,1)
+        add_factoriesWindowTable.attach(self.add_factorybutton,0,1,2,3)
+
+        self.add_factoriesWindow.present()
+        self.add_factoriesWindow.show_all()
+    
+    ### Tablolar ###
+    listmodel = Gtk.ListStore(str, str, str,str,str)
+    def hasta_tablo(self):
+   
+        self.hasta_vericekme_query()
+        self.listmodel.clear()
+        for i in range(len(self.hasta_listesi)):
+            self.listmodel.append(self.hasta_listesi[i])
+        
+        self.view = Gtk.TreeView(model=self.listmodel)
+        for i, column in enumerate(hasta_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.view.append_column(col)
+        
+        self.view.connect('button-press-event' , self.tablo_rightClick,'patients')
+        self.view.show_all()
+        self.scroll_patientTable = Gtk.ScrolledWindow()
+        self.scroll_patientTable.add(self.view)
+        self.scroll_patientTable.show_all()
+
+    ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str)
+
+    def ilac_tablo(self):
+
+        self.ilac_vericekme_query()
+        self.ilac_listmodel.clear()
+        for i in range(len(self.ilac_listesi)):
+            self.ilac_listmodel.append(self.ilac_listesi[i])
+
+        self.ilac_view = Gtk.TreeView(model=self.ilac_listmodel)
+        for i, column in enumerate(ilac_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.ilac_view.append_column(col)
+
+        self.ilac_view.connect('button-press-event' , self.tablo_rightClick,'medicines') 
+        self.ilac_view.show_all()        
+
+        self.ilac_view.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
+        self.ilac_view.connect("drag-data-get", self.on_drag_data_get)
+
+        
+        self.scroll_medicineTable = Gtk.ScrolledWindow()
+        self.scroll_medicineTable.add(self.ilac_view)
+        self.scroll_medicineTable.show_all()
+
+    facilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str)
+
+    def facilac_tablo(self):
+
+        self.facilac_vericekme_query(None)
+        self.facilac_listmodel.clear()
+        for i in range(len(self.ilac_listesi)):
+            self.facilac_listmodel.append(self.facilac_listesi[i])
+
+        self.facilac_view = Gtk.TreeView(model=self.facilac_listmodel)
+        for i, column in enumerate(ilac_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.facilac_view.append_column(col)
+
+        self.facilac_view.connect('button-press-event' , self.tablo_rightClick,'medicines') 
+        self.facilac_view.show_all()        
+
+        self.facilac_view.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
+        self.facilac_view.connect("drag-data-get", self.on_drag_data_get)
+
+        
+        self.scroll_fmedicineTable = Gtk.ScrolledWindow()
+        self.scroll_fmedicineTable.add(self.facilac_view)
+        self.scroll_fmedicineTable.show_all()    
+
+    factories_listmodel = Gtk.ListStore(str, str)
+    
+    def fabrika_tablo(self):
+        self.fabrika_vericekme_query()
+        self.factories_listmodel.clear()
+        for i in range(len(self.fabrika_listesi)):
+            self.factories_listmodel.append(self.fabrika_listesi[i])
+        
+        self.fabrika_view = Gtk.TreeView(model=self.factories_listmodel)
+        for i, column in enumerate(fabrika_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.fabrika_view.append_column(col)
+        
+        self.fabrika_view.connect('button-press-event' , self.tablo_rightClickFac,'factories')
+        self.fabrika_view.show_all()
+
+        self.scroll_factoriesTable = Gtk.ScrolledWindow()
+        self.scroll_factoriesTable.add(self.fabrika_view)
+        self.scroll_factoriesTable.show_all()
+
+    cartlistmodel = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
+    def cart_tablo(self):
+        
+        #for i in range(len(self.ilac_listesi)):
+        #    listmodel.append(self.ilac_listesi[i])
+
+        self.cart_view = Gtk.TreeView(model=self.cartlistmodel)
+        for i, column in enumerate(cart_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.cart_view.append_column(col)
+
+        self.cart_view.enable_model_drag_dest(TARGETS, DRAG_ACTION)
+        self.cart_view.connect("drag-data-received", self.on_drag_data_received)
+
+        self.cart_view.connect('button-press-event' , self.tablo_rightClick,'cart')
+        self.cart_view.show_all()
+
+        self.scroll_cartTable = Gtk.ScrolledWindow()
+        self.scroll_cartTable.add(self.cart_view)
+        self.cart_view.show_all()
+
+
+    ###DRAG AND DROP
+    def on_drag_data_get(self, widget, drag_context, data, info, time):
+        select = widget.get_selection()
+        model, treeiter = select.get_selected()
+        
+        self.Dragliste=list()
+        for i in model[treeiter]:
+            self.Dragliste.append(i)
+  
+       
+    geciciliste=list()
+    def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
+        print(self.geciciliste)
+        if self.Dragliste[0] in self.geciciliste:
+            pass
+        else:
+            self.ddKutuSayisi = Gtk.Window()
+            self.ddKutuSayisi.set_title("Box")
+            self.ddKutuSayisi.set_border_width(10)
+
+            self.ddKutuSayisiTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
+            self.ddKutuSayisi.add(self.ddKutuSayisiTable)
+
+            self.ddKutuSayisi_sayi = Gtk.Entry()
+            
+
+            self.ddKutuSayisi_button = Gtk.Button(label ="Send")
+            self.ddKutuSayisi_button.connect('clicked',self.cartUpdate)
+    
+            self.ddKutuSayisi_sayi.set_placeholder_text("Piece")
+        
+
+            self.ddKutuSayisiTable.attach(self.ddKutuSayisi_sayi,0,1,0,1)
+            self.ddKutuSayisiTable.attach(self.ddKutuSayisi_button,0,1,1,2)
+        
+
+            self.ddKutuSayisi.present()
+            self.ddKutuSayisi.show_all()
+
+            
+        
+    def cartUpdate(self,event):
+        self.geciciliste.append(self.Dragliste[0])
+        a=self.Dragliste[7]
+        self.Dragliste.pop()
+        self.ddKutuSayisi.hide()
+        self.Dragliste.append(self.ddKutuSayisi_sayi.get_text())
+        self.Dragliste.append(a)
+        self.cartlistmodel.append(self.Dragliste)
+        
+          
+
+    #### Veri Tabanı Fonksiyonları ####
+
+    def baglanti_baslat(self):
+        self.con = sqlite3.connect('pharmacy.db')
+        self.cursor = self.con.cursor()
+    
+    def kullanici_ekle_query(self,ids,passw):
+        self.cursor.execute("INSERT INTO users(USERNAME,PASSWORD) Values(?,?)",(ids,passw))
+        self.con.commit()
+    
+    def kullanici_giris_query(self,ids,passw):
+        self.cursor.execute("SELECT * FROM users WHERE USERNAME == ? AND PASSWORD == ?",(ids,passw))
+        liste = self.cursor.fetchall()
+
+        if len(liste) == 1:
+            self.remove(self.main_Table)
+            self.ana_ekran()
+        else:
+            self.main_hataLabel = Gtk.Label(label = "Wrong credentials!")
+            self.main_Table.attach(self.main_hataLabel,2,8,8,9)
+            self.main_Table.show_all()
+
+    def add_NewPatient(self,event):
+
+        tc = self.tcnumber.get_text()
+        name = self.name.get_text()
+        surname = self.surname.get_text()
+        email = self.email.get_text()
+
+        self.cursor.execute("INSERT INTO patients(TC,NAME,SURNAME,EMAIL) Values(?,?,?,?)",(tc,name,surname,email))
+        self.con.commit()
+
+        self.add_PatientWindow.hide()
+
+        self.listmodel.clear()
+        self.hasta_vericekme_query()
+
+        for i in range(len(self.hasta_listesi)):
+            self.listmodel.append(self.hasta_listesi[i])
+    
+    def add_NewFactory(self,event):
+
+        factory_Name = self.factory_Name.get_text()
+
+        self.cursor.execute("INSERT INTO factories(NAME) Values(?)",(factory_Name,))
+        self.con.commit()
+
+        self.add_factoriesWindow.hide()
+
+        self.factories_listmodel.clear()
+        self.fabrika_vericekme_query()
+
+        for i in range(len(self.fabrika_listesi)):
+            self.factories_listmodel.append(self.fabrika_listesi[i])
+        
+    def hasta_vericekme_query(self):
+        self.cursor.execute("SELECT * FROM patients")
+        hasta_list = self.cursor.fetchall()
+        self.hasta_listesi = list()
+        for i in list(hasta_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.hasta_listesi.append(gecici_liste)
+
+    def ilac_vericekme_query(self):
+        self.cursor.execute("SELECT * FROM medicines")
+        ilac_list = self.cursor.fetchall()
+        self.ilac_listesi = list()
+        for i in list(ilac_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.ilac_listesi.append(gecici_liste)
+
+    def facilac_vericekme_query(self,facname):
+        if(facname==None):
+            self.cursor.execute("SELECT * FROM medicines")
+        else:
+            self.cursor.execute("SELECT * FROM medicines WHERE FACTORY=?",(facname,))
+        facilac_list = self.cursor.fetchall()
+        self.facilac_listesi = list()
+        for i in list(facilac_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.facilac_listesi.append(gecici_liste)
+
+    def fabrika_vericekme_query(self):
+        self.cursor.execute("SELECT * FROM factories")
+        fabrika_list = self.cursor.fetchall()
+        self.fabrika_listesi = list()
+        for i in list(fabrika_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.fabrika_listesi.append(gecici_liste)
+
+    
+    #### Prio 2 Veri Tabanı Fonksiyonları ####
+    
+    def kullanici_ekle(self,event):
+        ids = self.kayit_IdEntry.get_text()
+        passw = self.kayit_PassEntry.get_text()
+        self.kullanici_ekle_query(ids,passw)
+
+        self.remove(self.kayit_Table)
+        self.giris_ekrani()
+    
+    def kullanici_kayit(self,event):
+        self.remove(self.main_Table)
+        self.kayit_ekrani()
+
+    def kullanici_giris(self,event):
+        ids = self.main_IdEntry.get_text()
+        passw = self.main_PassEntry.get_text()
+        self.kullanici_giris_query(ids,passw)
+
+    #### İşlevsel Fonksiyonlar ####
+
+    def tablo_rightClick(self,treeview, event,tablename):
+        self.table_type = tablename
+        if event.button == 3: # right click
+            pthinfo = treeview.get_path_at_pos(event.x, event.y)
+            if pthinfo != None:
+                path,col,cellx,celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path,col,0)
+            selection = treeview.get_selection()
+            (model, iter) = selection.get_selected()
+            self.secilen_Satir=model[iter][0] # seçilen satırı id si
+            print(self.secilen_Satir)
+            print(treeview.get_model())
+
+            menu = self.context_menu()
+            menu.popup( None, None, None,None, event.button, event.get_time())
+            return True
+    
+    def tablo_rightClickFac(self,treeview, event,tablename):
+        self.table_type = tablename
+        
+        pthinfo = treeview.get_path_at_pos(event.x, event.y)
+        if pthinfo != None:
+            path,col,cellx,celly = pthinfo
+            treeview.grab_focus()
+            treeview.set_cursor(path,col,0)
+        selection = treeview.get_selection()
+        (model, iter) = selection.get_selected()
+        self.secilen_Satir=model[iter][0] # seçilen satırı id si
+        print(self.secilen_Satir)
+        print(model[iter][1])
+
+        self.facilac_listmodel.clear()
+        self.facilac_vericekme_query(model[iter][1])
+
+        for i in range(len(self.facilac_listesi)):
+            self.facilac_listmodel.append(self.facilac_listesi[i])
+
+
+        
+     
     def context_menu(self): # Buton sağ tıkında açılan menü 
         menu = Gtk.Menu()
 
-        menu_item_del = Gtk.MenuItem(label = "Bağlantıyı Sil")
+        menu_item_del = Gtk.MenuItem(label = "Sil")
         menu.append(menu_item_del)
-        menu_item_del.connect("activate",self.on_click_delete)
+        menu_item_del.connect("activate",self.onclick_Delete)
 
-        menu_item_connect = Gtk.MenuItem(label = "Bağlan")
-        menu.append(menu_item_connect)
-        menu_item_connect.connect("activate",self.on_click_connect)
+        menu_item_update = Gtk.MenuItem(label = "Güncelle")
+        menu.append(menu_item_update)
+        if self.table_type == 'patients':
+            menu_item_update.connect("activate",self.hasta_guncelle)
+        
+        if self.table_type == 'medicines':
+            menu_item_update.connect("activate",self.ilac_guncelle)
 
-        menu_item_scp = Gtk.MenuItem(label = "Scp ile Dosya Gönder")
-        menu.append(menu_item_scp)
-        menu_item_scp.connect("activate",self.scp_transfer)
-
-        menu_item_scp = Gtk.MenuItem(label = "Tanımlı Sertifikayı Sil")
-        menu.append(menu_item_scp)
-        menu_item_scp.connect("activate",self.delete_defined_certificate)
+        if self.table_type == 'factories':
+            menu_item_update.connect("activate",self.factory_guncelle)
+        
+        if self.table_type == 'cart':
+            menu_item_update.connect("activate",self.cart_guncelle)
 
         menu.show_all()
 
         return menu
+    
+    def onclick_Delete(self,action):
+        if self.table_type == 'patients':
+            self.cursor.execute("DELETE FROM patients WHERE ID = ?",(self.secilen_Satir,))
+            self.con.commit()
+     
+            self.listmodel.clear()
+            self.hasta_vericekme_query()
 
-    def on_click_connect(self,widget): # Sağ tık menüsündeki Connect Host seçeneği ile açılan pencere
-        try:
-            sshProcess = subprocess.Popen(['ssh', '-T',self.labelmenu],stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            out, err = sshProcess.communicate(timeout=0.5)
+            for i in range(len(self.hasta_listesi)):
+                self.listmodel.append(self.hasta_listesi[i])
+        
+        if self.table_type == 'medicines':
+            self.cursor.execute("DELETE FROM medicines WHERE ID = ?",(self.secilen_Satir,))
+            self.con.commit()
+     
+            self.ilac_listmodel.clear()
+            self.ilac_vericekme_query()
 
-            key_word = b'Linux'
+            for i in range(len(self.ilac_listesi)):
+                self.ilac_listmodel.append(self.ilac_listesi[i])
 
-            if key_word in out:
-                self.terminal     = Vte.Terminal()
-                self.terminal.spawn_sync(
-                Vte.PtyFlags.DEFAULT,
-                os.environ[HOME],
-                SHELLS,
-                [],
-                GLib.SpawnFlags.DO_NOT_REAP_CHILD,
-                None,
-                None,)
+        if self.table_type == 'factories':
+            self.cursor.execute("DELETE FROM factories WHERE ID = ?",(self.secilen_Satir,))
+            self.con.commit()
+     
+            self.factories_listmodel.clear()
+            self.fabrika_vericekme_query()
 
-                self.new_page = Gtk.Box()
-                self.new_page.set_border_width(10)
+            for i in range(len(self.fabrika_listesi)):
+                self.factories_listmodel.append(self.fabrika_listesi[i])
 
-                self._button_box = Gtk.HBox()
-                self._button_box.get_style_context().add_class("right")
-
-                self.close_button()
-                self.new_page.add(self.terminal)
-                self.notebook.append_page(self.new_page, self._button_box)
-
-                self.number = self.notebook.page_num(self.new_page)
-                self.number_list.append(self.number)
-                self.number_list.pop()
-
-                self.notebook.show_all()
-                self.notebook.set_current_page(-1)
-
-                com = 'ssh ' + self.labelmenu + '\n'
-
-                self.terminal.feed_child(com.encode("utf-8"))
-                time.sleep(0.5) 
+        if self.table_type == 'cart':
+            for row in self.cartlistmodel:
+                if row[0] == self.secilen_Satir:
+                    self.cartlistmodel.remove(row.iter)
+                    break
+            for row2 in self.geciciliste:
+                if row2[0] == self.secilen_Satir:
+                    self.geciciliste.remove(row2)
+                    break
             
-            else:
-                self.enter_password()
-                self.connect_button.connect('clicked',self.send_password)
             
-        except:
-            sshProcess.send_signal(signal.SIGINT)
-            self.enter_password()
-            self.connect_button.connect('clicked',self.send_password)
 
-    def button_left_click(self,listbox_widget,event): # Buton sol click fonksiyonu
-        self.notebooks(listbox_widget.get_label())
-        self.notebook.set_current_page(0)
-        self.toolbar()
-
-    def button_clicked(self,listbox_widget,event):  # Buton sağ click fonksiyonu
-        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
-            menu = self.context_menu()
-            ## Tıklanan objenin labelini print ediyor
-            self.labelmenu = listbox_widget.get_label()
-            menu.popup( None, None, None,None, event.button, event.get_time()) 
-            return True               
-                        
-    def on_click_popup(self, action): ## Yeni sayfa oluştur
-        self.new_page = Gtk.Box()
-        self.new_page.set_border_width(10)
-
-        self._button_box = Gtk.HBox()
-        self._button_box.get_style_context().add_class("right")
-
-        self.close_button()
-        self.new_page.add(Gtk.Label(label=self.labelmenu))
-        self.notebook.append_page(self.new_page, self._button_box)
-
-        self.number = self.notebook.page_num(self.new_page)
-        self.number_list.append(self.number)
-        self.number_list.pop()
-        self.notebook.show_all()
-    
-    def on_click_delete(self,action): # # Seçilen bağlantıyı silme fonksiyonu   
-        baglantilar_index = list(self.baglantilar.keys()).index(self.labelmenu)
-        self.listbox.remove(self.listbox.get_row_at_index(baglantilar_index))  
-        self.listbox.show_all()
-        self.baglantilar.pop(self.labelmenu)
-        self.write_config()   
-
-    def add_new_host_window(self,event): # Yeni host ekleme penceresi
-        self.input_window = Gtk.Window()
-        self.input_window.set_title("Yeni Bağlantı Ekle")
-        self.input_window.set_border_width(10)
-        table2 = Gtk.Table(n_rows=7, n_columns=0, homogeneous=True)
-        self.input_window.add(table2)
-
-        self.host = Gtk.Entry()
-        self.host_name = Gtk.Entry()
-        self.user = Gtk.Entry()
-        self.port = Gtk.Entry()
-        self.submit_button = Gtk.Button(label ="Gönder")
-        self.submit_button.connect('clicked',self.on_click_add_new_host)
-  
-        self.host.set_placeholder_text("Host")
-        self.host_name.set_placeholder_text("HostName")
-        self.user.set_placeholder_text("User")
-
-        table2.attach(self.host,0,1,0,1)
-        table2.attach(self.host_name,0,1,2,3)
-        table2.attach(self.user,0,1,4,5)
-        table2.attach(self.submit_button,0,1,6,7)
-
-        self.input_window.present()
-        self.input_window.show_all()  
+    def onclick_Update(self,action):
+        if self.table_type == 'patients':
         
-    def listbox_add_items(self): # Listbox'a host isimlerini ekleyen fonksiyon
-        self.baglantilar.clear()
-        self.read_config()
-        keys = self.baglantilar.keys()
-        for row in self.listbox.get_children():
-            self.listbox.remove(row)
-        for i in keys:
-            ## label yerine buton oluşturduk
-            buttons = Gtk.Button.new_with_label(i)
-            buttons.connect("button-press-event",self.button_clicked)
-            buttons.connect("button-press-event",self.button_left_click)
-            self.listbox.add(buttons) 
-        self.listbox.show_all()
-    
-    def on_click_add_new_host(self,widget): ## Açılır penceredeki gönder butonu fonksiyonu
-        if self.host.get_text() == '':
-            self.blank_entry_from_new_host()
+            self.cursor.execute("UPDATE patients SET TC = ?, NAME = ?, SURNAME = ?, EMAIL = ? WHERE ID = ?",(int(self.update_tcnumber.get_text()),
+                self.update_name.get_text(),self.update_surname.get_text(),self.update_email.get_text(),self.secilen_Satir))
+            self.con.commit()
+
+            self.update_PatientWindow.hide()
+            self.listmodel.clear()
+            self.hasta_vericekme_query()
+
+            for i in range(len(self.hasta_listesi)):
+                self.listmodel.append(self.hasta_listesi[i])
+
+        if self.table_type == 'factories':
         
-        elif self.host_name.get_text() == '':
-            self.blank_entry_from_new_host()
-        
-        elif self.user.get_text() == '':
-            self.blank_entry_from_new_host()
+            self.cursor.execute("UPDATE factories SET NAME = ? WHERE ID = ?",(self.update_factoryname.get_text(),self.secilen_Satir))
+            self.con.commit()
 
-        elif self.host.get_text() == self.user.get_text():
-            self.same_name_from_new_host()
+            self.update_FactoryWindow.hide()
+            self.factories_listmodel.clear()
+            self.fabrika_vericekme_query()
 
-        else:
-            self.read_config()
-            new_host = self.host.get_text()
-            new_hostname = self.host_name.get_text()
-            new_user = self.user.get_text()
-            default_port = '22'
+            for i in range(len(self.fabrika_listesi)):
+                self.factories_listmodel.append(self.fabrika_listesi[i])
 
-            self.baglantilar[new_host] = {'Host' : new_host, 'Hostname' : new_hostname , 'User' : new_user, 'Port' : default_port}
-            self.write_config()
+        if self.table_type == 'medicines':
+            self.cursor.execute("UPDATE medicines SET NAME = ?, DOSE = ?, ACTIVE = ?, PIECE = ?, PRICE = ? WHERE ID = ?",(self.update_Medicinename.get_text(),
+                int(self.update_Medicinedose.get_text()),
+                self.update_Medicineactive.get_text(),
+                int(self.update_Medicinepiece.get_text()),
+                self.update_Medicineprice.get_text(),
+                self.secilen_Satir))
+            self.con.commit()
 
-            self.listbox_add_items()
-            self.listbox.show_all()
-            self.input_window.hide()
+            self.update_MedicineWindow.hide()
+            self.ilac_listmodel.clear()
+            self.ilac_vericekme_query()
+
+            for i in range(len(self.ilac_listesi)):
+                self.ilac_listmodel.append(self.ilac_listesi[i])
+
+        if self.table_type == 'cart':
+            self.cartGuncelleWindow.hide()
+            for row in self.cartlistmodel:
+                if row[0] == self.secilen_Satir:
+                    row[7]=self.cartGuncelleSayi.get_text()
+                    break
+
     
-    def same_name_from_new_host(self):
-        self.same_name_from_new_host_window= Gtk.Window()
-        self.same_name_from_new_host_window.set_title("Yeni Bağlantı Ekle")
-        self.same_name_from_new_host_window.set_border_width(10)
-        table15 = Gtk.Table(n_rows=2, n_columns=3, homogeneous=True)
-        self.same_name_from_new_host_window.add(table15)
-        self.same_name_from_new_host_window.set_size_request(200,100)
+    def ilac_addButtonEvent(self,event):
+        self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE) Values(?,?,?,?,?)",
+            (self.ilac_nameEntry.get_text(),self.ilac_doseEntry.get_text(),self.ilac_activeEntry.get_text(),self.ilac_pieceEntry.get_text(),
+                                                                                                            self.ilac_priceEntry.get_text()))
+        self.con.commit()
 
-        same_name_from_new_host_label = Gtk.Label(label = 'Host ve User değişkenleri aynı isme sahip olamaz !')
-        same_name_from_new_host_button = Gtk.Button(label = 'Tamam')
+        self.ilac_nameEntry.set_text('')
+        self.ilac_doseEntry.set_text('')
+        self.ilac_activeEntry.set_text('')
+        self.ilac_pieceEntry.set_text('')
+        self.ilac_priceEntry.set_text('')
 
-        table15.attach(same_name_from_new_host_label,0,3,0,1)
-        table15.attach(same_name_from_new_host_button,2,3,1,2)
+        self.ilac_listmodel.clear()
+        self.ilac_vericekme_query()
 
-        same_name_from_new_host_button.connect('clicked',self.same_name_hide)
-
-        self.same_name_from_new_host_window.present()
-        self.same_name_from_new_host_window.show_all()
-
-    def same_name_hide(self,clicked):
-        self.same_name_from_new_host_window.hide()
-
-    def blank_entry_from_new_host(self):
-        self.blank_entry_from_new_host_window= Gtk.Window()
-        self.blank_entry_from_new_host_window.set_title("Yeni Bağlantı Ekle")
-        self.blank_entry_from_new_host_window.set_border_width(10)
-        table16 = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
-        self.blank_entry_from_new_host_window.add(table16)
-        self.blank_entry_from_new_host_window.set_size_request(200,100)
-
-        blank_entry_from_new_host_label = Gtk.Label(label = 'Boş değer bırakılamaz !')
-        blank_entry_from_new_host_button = Gtk.Button(label = 'Tamam')
-
-        table16.attach(blank_entry_from_new_host_label,0,2,0,1)
-        table16.attach(blank_entry_from_new_host_button,1,2,1,2)
-
-        blank_entry_from_new_host_button.connect('clicked',self.blank_entry_hide)
-
-        self.blank_entry_from_new_host_window.present()
-        self.blank_entry_from_new_host_window.show_all()
+        for i in range(len(self.ilac_listesi)):
+            self.ilac_listmodel.append(self.ilac_listesi[i])
     
-    def blank_entry_hide(self,clicked):
-        self.blank_entry_from_new_host_window.hide()
-
-    def on_search_activated(self,searchentry):
-        self.baglantilar.clear()
-        self.read_config()
+    def patients_searchBar(self,searchentry):
         search_text = searchentry.get_text()
         keys = self.baglantilar.keys()
         for row in self.listbox.get_children():
@@ -367,1000 +948,11 @@ class MyWindow(Gtk.Window):
                 
                 self.listbox.show_all()
 
-    ########################## Toolbar Menu #####################################
-    
-    def ui_info(self):
-        self.UI_INFO = """
-    <ui>
-    <menubar name='MenuBar'>
-        <menu action='FileMenu'>
-        <menuitem action='FileNew' />
-        <menuitem action='FileNewNew' />
-        </menu>
-    </menubar>
-    </ui>
-    """      
-
-    def toolbar(self): # Sertifikaların yer aldığı toolbar
-
-        action_group = Gtk.ActionGroup(name="my_actions")
-        uimanager = self.create_ui_manager()
-        uimanager.insert_action_group(action_group)
-        self.add_file_menu_actions(action_group)
-        menubar = uimanager.get_widget("/MenuBar")
-
-        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.box.pack_start(menubar, False, False, 0)
-
-        eventbox = Gtk.EventBox()
-        self.box.pack_start(eventbox, True, True, 0)
         
-    def add_file_menu_actions(self, action_group): # Menü itemların tanımlanması ve görevleri
-        
-        action_filemenu = Gtk.Action(name="FileMenu", label="Sertifikalar")
-        action_group.add_action(action_filemenu)
+    def on_click_clean(self,event):
+        self.cartlistmodel.clear()
+        self.geciciliste.clear()
 
-        action_filenewmenu = Gtk.Action(name="FileNew", label = "Sertifikalarım")
-        action_group.add_action(action_filenewmenu)
-        action_filenewmenu.connect("activate", self.list_certificates)
-
-        action_filenewnewmenu = Gtk.Action(name="FileNewNew", label = "Sertifika Oluştur")
-        action_filenewnewmenu.connect("activate", self.create_new_certificate)
-        action_group.add_action(action_filenewnewmenu)
-    
-    def create_ui_manager(self): 
-        uimanager = Gtk.UIManager()
-        self.ui_info()
-        uimanager.add_ui_from_string(self.UI_INFO)
-        accelgroup = uimanager.get_accel_group()
-        self.add_accel_group(accelgroup)
-        return uimanager           
-
-    ########################## Sertifika İşlemleri #####################################
-    
-    def read_local_certificates(self): # Var olan sertifikaları okuyan fonksiyon
-        self.certificates =  glob.glob(self.home+"/.ssh/*.pub")
-    
-    def list_certificates(self,event): # Sertifikaların listelendiği fonksiyon
-        self.read_local_certificates()
-
-        page = Gtk.ScrolledWindow()
-        page.set_border_width(10)
-        self.cert_listbox = Gtk.ListBox()
-        self.notebook.remove_page(0)
-        self.notebook.set_current_page(0)
-        self.notebook.prepend_page(page, Gtk.Label(label = "Ana Sayfa"))
-        self.toolbar()
-        
-        for i in self.certificates:
-            ## label yerine buton oluşturduk
-            buttons = Gtk.Button.new_with_label(i)
-            buttons.connect("button-press-event",self.button_right_clicked_cert)
-            buttons.connect("button-press-event",self.on_cert_left_clicked)
-            self.cert_listbox.add(buttons) 
-        
-        page.add(self.cert_listbox)
-        self.cert_listbox.show_all()
-        self.notebook.show_all()
-        self.notebook.set_current_page(0)
-    
-    def context_menu_cert(self): # Sertifika butonuna sağ tıklanınca açılan menü
-        menu = Gtk.Menu()
-        menu_item = Gtk.MenuItem(label = "Sertifikayı Sil")
-        menu.append(menu_item)
-        menu_item.connect("activate", self.delete_cert)
-
-        menu_item = Gtk.MenuItem(label ="Sertifikayı Gönder")
-        menu.append(menu_item)
-        menu_item.connect("activate", self.send_cert)
-        menu.show_all()
-
-        return menu
-    
-    def delete_cert(self,action): # Sertifika silme görevi 
-        self.read_local_certificates()
-        cert_index = self.certificates.index(self.labelmenu_cert)
-        self.cert_listbox.remove(self.cert_listbox.get_row_at_index(cert_index))
-        self.cert_listbox.show_all()
-        priv  = self.labelmenu_cert.rstrip('.pub')
-        os.remove(self.labelmenu_cert)   
-        os.remove(priv)   
-
-    def send_cert(self,action):
-        self.send_cert_window = Gtk.Window()
-        self.send_cert_window.set_title("Sertifikayı Gönder")
-
-        self.send_cert_window.set_border_width(10)
-        table12 = Gtk.Table(n_rows=2, n_columns=1, homogeneous=True)
-        self.send_cert_window.add(table12)
-
-        certificate_combo = Gtk.ComboBoxText()
-        certificate_combo.set_entry_text_column(0)
-        certificate_combo.connect("changed", self.on_combo_changed)
-        for currency in self.baglantilar.keys():
-            certificate_combo.append_text(currency)
-
-        send_cert_button = Gtk.Button(label = "Gönder")
-        send_cert_button.connect('clicked',self.on_click_send_cert)
-        table12.attach(certificate_combo,0,1,0,1)
-        table12.attach(send_cert_button,0,1,1,2)
-
-        self.send_cert_window.present()
-        self.send_cert_window.show_all()
-    
-    def on_combo_changed(self, combo):
-        self.text = combo.get_active_text()
-    
-    def on_click_send_cert(self,action):
-        self.send_cert_window.hide()
-        self.enter_password()
-        self.connect_button.connect('clicked',self.send_cert_action)
-    
-    def send_cert_action(self,event):
-        try:
-            self.read_local_certificates()
-            send_pass = self.connect_password.get_text() + '\n'
-            send_cert = 'ssh-copy-id -i ' + self.labelmenu_cert + ' ' + self.text
-
-            child = pexpect.spawn(send_cert,encoding='utf-8')
-            child.expect('password:')
-            child.sendline(send_pass)
-            time.sleep(2)
-            self.connect_window.hide()
-            self.send_cert_window.hide()
-        
-        except:
-            self.fail_cert()
-            self.connect_window.hide()
-            self.send_cert_window.hide()
-    
-    def fail_cert(self):
-        self.fail_cert_window = Gtk.Window()
-        self.fail_cert_window.set_title("Hata Mesajı")
-
-        self.fail_cert_window.set_border_width(10)
-        table14 = Gtk.Table(n_rows=3, n_columns=1, homogeneous=True)
-        self.fail_cert_window.add(table14)
-
-        fail_cert_label = Gtk.Label(label = "Sunucu şifrenizi yanlış girmiş olabilirsiniz veya sertifika göndermek istediğiniz sunucuda\nzaten bir sertifikanız kayıtlı olabilir.Devam etmek için önceki sertifikanızı silmeniz\ngerekmektedir.")
-        fail_cert_button = Gtk.Button(label = "Tamam")
-        fail_cert_button.connect('clicked',self.fail_cert_hide)
-        table14.attach(fail_cert_label,0,1,0,2)
-        table14.attach(fail_cert_button,0,1,2,3)
-
-        self.fail_cert_window.present()
-        self.fail_cert_window.show_all()
-    
-    def fail_cert_hide(self,clicked):
-        self.fail_cert_window.hide()
-    
-    
-    def on_cert_left_clicked(self,listbox_widget,event): # Sertifikalara sol tıklanma görevi
-        desc = ""
-        cert_path = listbox_widget.get_label().rstrip('\n')
-        cert_name = os.path.basename(cert_path)
-
-        with open(cert_path, 'r') as description:
-            desc = description.read()
-        dialog = Gtk.Dialog(transient_for=self, flags=0,title=cert_name)
-        dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
-        dialog.set_default_size(750, 120)
-        label = Gtk.Label(label=desc)
-        label.set_line_wrap(True)
-        label.set_selectable(True)
-        scrollableWindow = Gtk.ScrolledWindow()
-        scrollableWindow.add(label)
-        scrollableWindow.set_min_content_width(750)
-        scrollableWindow.set_min_content_height(100)
-        content = dialog.get_content_area()
-        content.add(scrollableWindow)
-        dialog.show_all()
-
-        response = dialog.run()
-
-        dialog.destroy() 
-
-    def button_right_clicked_cert(self,listbox_widget,event): # Sertifikalara sağ tıklandığında  
-        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
-            menu = self.context_menu_cert()
-            self.labelmenu_cert = listbox_widget.get_label()
-            menu.popup( None, None, None,None, event.button, event.get_time()) 
-            return True
-
-    def create_new_certificate(self,event):
-        self.cert_name_win = Gtk.Window()
-        self.cert_name_win.set_title("Yeni Sertifika")
-
-        self.cert_name_win.set_border_width(10)
-        table11 = Gtk.Table(n_rows=2, n_columns=1, homogeneous=True)
-        self.cert_name_win.add(table11)
-
-        self.cert_name_entry = Gtk.Entry()
-        self.cert_pass_entry = Gtk.Entry()
-        self.cert_pass_entry.set_visibility(False)
-        cert_name_button = Gtk.Button(label = "Gönder")
-        cert_name_button.connect("clicked",self.create_certificate)
-
-        self.cert_name_entry.set_placeholder_text("Sertifika Adı (İsteğe Bağlı)")
-
-        table11.attach(self.cert_name_entry,0,1,0,1)
-        table11.attach(cert_name_button,0,1,1,2)
-
-        self.cert_name_win.present()
-        self.cert_name_win.show_all()
-
-    def create_certificate(self,event): # Sertifika oluşturma görevi
-        self.read_local_certificates()
-        cert_input = self.home + '/.ssh/' + self.cert_name_entry.get_text() + '\n'
-
-        if self.cert_name_entry.get_text() == '':
-            if self.home + '/.ssh/id_rsa.pub' in self.certificates:
-                self.write_on_certificate()
-                time.sleep(0.5)
-            else:
-                no_name_cert_input = '\n' + self.cert_pass_entry.get_text() + '\n'
-                create_cert = run('ssh-keygen', stdout=PIPE, input=no_name_cert_input, encoding='utf-8')
-        else:
-            create_cert = run('ssh-keygen', stdout=PIPE, input=cert_input, encoding='utf-8')
-
-        self.list_certificates('clicked')
-        self.cert_name_win.hide()
-
-    def write_on_certificate(self): # Eğer default isimde bir sertifika zaten varsa verilecek uyarı penceresi
-        self.write_on_certificate_window = Gtk.Window()
-        self.write_on_certificate_window.set_title("Üzerine yazılsın mı ? ")
-        self.write_on_certificate_window.set_border_width(10)
-
-        table13 = Gtk.Table(n_rows=2, n_columns=2, homogeneous=True)
-        self.write_on_certificate_window.add(table13)
-
-        write_on_certificate_label = Gtk.Label( label = "Zaten idrsa.pub isimli bir sertifikanız var. Oluşturacağınız yeni sertifika üzerine yazılacaktır.\n\t\t\t\t\t\t\t\t\tOnaylıyor musunuz ?")
-        write_on_certificate_yes_btn = Gtk.Button(label = "Evet")
-        write_on_certificate_no_btn = Gtk.Button(label = "Hayır")
-
-        write_on_certificate_yes_btn.connect('clicked',self.on_click_write_on_yes_btn)
-        write_on_certificate_no_btn.connect('clicked',self.on_click_write_on_no_btn)
-
-        table13.attach(write_on_certificate_label,0,2,0,1)
-        table13.attach(write_on_certificate_yes_btn,0,1,1,2)
-        table13.attach(write_on_certificate_no_btn,1,2,1,2)
-
-        self.write_on_certificate_window.present()
-        self.write_on_certificate_window.show_all()
-
-    def on_click_write_on_yes_btn(self,clicked): # Üzerine yazılma kabul edildiyse
-        no_name_cert_input = '\n' + self.cert_pass_entry.get_text() + '\n'
-        create_cert = run('ssh-keygen', stdout=PIPE, input=no_name_cert_input, encoding='utf-8')
-        time.sleep(0.5)
-        self.write_on_certificate_window.hide()
-    
-    def on_click_write_on_no_btn(self,clicked): # Üzerine yazılma reddedildiyse
-        self.write_on_certificate_window.hide()
-
-    def _close_cb(self, button): # Kapatma butonu görevi.
-            self.notebook.remove_page(self.number_list[-1])
-    
-    def delete_defined_certificate(self,event):
-        try:
-            command = 'sed -i /' + getpass.getuser() +'/d ~/.ssh/authorized_keys'
-            delete_def_cert = run(['ssh','-T',self.labelmenu], stdout=PIPE, input=command, encoding='utf-8',timeout=1)
-        
-        except subprocess.TimeoutExpired:
-            print('Hata ! Bu sunucuya tanımlı bir sertifika yok.')
-
-    ########################## Notebook İşlemleri #####################################
-       
-    def close_button(self): # Close butonu
-        self._button_box = Gtk.HBox()
-        self._button_box.get_style_context().add_class("right")
-        label1 = Gtk.Label(label=self.labelmenu)
-
-        _close_btn = Gtk.Button()
-        _close_btn.get_style_context().add_class("titlebutton")
-        _close_btn.get_style_context().add_class("close")
-
-        _close_btn.add(get_icon("window-close-symbolic"))
-        _close_btn.connect("clicked", self._close_cb)
-        _close_btn.show_all()
-        label1.show_all()
-        
-        self._button_box.pack_start(label1, False, False, 3)
-        self._button_box.pack_start(_close_btn, False, False, 3)
-
-    
-    def close_button_2(self): # SFTP sayfasındaki close button.
-        self._button_box = Gtk.HBox()
-        self._button_box.get_style_context().add_class("right")
-        label1 = Gtk.Label(label=self.get_host_before)
-
-        _close_btn = Gtk.Button()
-        _close_btn.get_style_context().add_class("titlebutton")
-        _close_btn.get_style_context().add_class("close")
-
-        _close_btn.add(get_icon("window-close-symbolic"))
-        _close_btn.connect("clicked", self._close_cb)
-        
-        _close_btn.show_all()
-        label1.show_all()
-        
-        self._button_box.pack_start(label1, False, False, 3)
-        self._button_box.pack_start(_close_btn, False, False, 3)
-    
-    def index_host(self,wanted_host):#indeksi istenilen hostun labelname atılmalı String
-        self.read_config()
-        wanted_host_index=int()
-        
-        baglanti_key=list(self.baglantilar.keys())
-        for i in range(0,len(baglanti_key)):
-            if(baglanti_key[i]==wanted_host):
-                wanted_host_index=i
-
-    def notebooks(self,labelname): # Attributes sayfası
-        self.read_config()
-        self.notebook.remove_page(0)
-        self.page1 = Gtk.Box()
-        self.page1.set_border_width(10)
-        self.notebook.prepend_page(self.page1, Gtk.Label(label = "Ana Sayfa"))
-        self.notebook.set_current_page(0),
-        self.toolbar()
-        self.get_host_before = labelname
-
-        grid = Gtk.Grid()
-        self.page1.add(grid)
-        self.label_dict={}
-        self.entries_dict={}
-        grid_count=2
-        grid_count_2=2
-        header = Gtk.Label( label = labelname+" Nitelikleri")
-        grid.attach(header,0,1,1,1)
-
-        for p_id, p_info in self.baglantilar.items():
-                for key in p_info:
-                    if(p_info['Host']==labelname):
-                        labeltemp = "left_label_"+str(key)
-                        oldlabel = labeltemp
-                        labeltemp = Gtk.Label(label = key) 
-                        self.label_dict[oldlabel] = labeltemp
-
-                        grid.attach(labeltemp,0,grid_count,2,1)
-                        grid_count += 1
-
-                        temp = "right_entry_"+str(p_info[key])
-                        oldname = temp
-                        temp = Gtk.Entry()
-                        self.entries_dict[oldname] = temp
-                        temp.set_text(p_info[key])
-                
-                        grid.attach(temp,5,grid_count_2,2,1)
-                        grid_count_2 += 1
-
-        add_attribute_button = Gtk.Button(label = "Yeni Nitelik Ekle")
-        add_attribute_button.connect("clicked",self.add_attribute)
-
-        notebook_change_button = Gtk.Button(label ="Niteliği Değiştir")
-        notebook_change_button.connect('clicked',self.on_click_change)
-
-        start_sftp_button = Gtk.Button(label ="SFTP ile Bağlan")
-        start_sftp_button.connect("clicked",self.on_click_sftp)
-
-        grid.attach(add_attribute_button,0,19,2,1)   # Add Attribute button
-        grid.attach(notebook_change_button,0,20,2,1) # Change butonu 
-        grid.attach(start_sftp_button,0,21,2,1)      # Start SFTP Button
-          
-        self.notebook.show_all()
-        self.listbox.show_all()
-        
-    def on_click_change(self,listbox_widget): # Change attribute butonu görevi
-        values_list = list(self.entries_dict.values())
-        labels_list = list(self.label_dict.values())
-        updated_list=dict()
-        for i in range(0,len(values_list)):
-            updated_list[labels_list[i].get_text()]=values_list[i].get_text()
-            if values_list[i].get_text() == "":
-                updated_list.pop(labels_list[i].get_text())
-
-        self.index_host(self.get_host_before)
-        self.baglantilar[self.get_host_before]=updated_list
-        self.baglantilar[values_list[0].get_text()] = self.baglantilar[self.get_host_before]#index değişimi bakılmalı sona eklenen kendi indexsine eklenmeli normalde
-        self.write_config()
-        self.notebooks(values_list[0].get_text())
-        self.listbox_add_items()
-        self.notebook.set_current_page(0)
-
-    def add_attribute(self,widget): # Yeni attribute ekleme penceresi
-        self.add_attribute_window = Gtk.Window()
-        self.add_attribute_window.set_default_size(10,100)
-        self.add_attribute_window.set_title("Nitelik Ekle")
-        self.add_attribute_window.set_border_width(10)
-
-        table3 = Gtk.Table(n_rows=3, n_columns=5, homogeneous=True)
-        self.add_attribute_window.add(table3)
-
-        self.attribute_name = Gtk.Entry()
-        self.attribute_value = Gtk.Entry()
-        add_attribute_submit_button = Gtk.Button(label ="Ekle")
-  
-        self.attribute_name.set_placeholder_text("Nitelik İsmi")
-        self.attribute_value.set_placeholder_text("Nitelik Değeri")
-
-        add_attribute_submit_button.connect('clicked',self.on_click_add_attribute)
-
-        table3.attach(self.attribute_name,0,2,0,1)
-        table3.attach(self.attribute_value,3,5,0,1)
-
-        table3.attach(add_attribute_submit_button,1,4,2,3)
-
-        self.add_attribute_window.present()
-        self.add_attribute_window.show_all()    
-
-    def on_click_add_attribute(self,widget): # Yeni attribute ekleme butonu görevi
-        if self.attribute_name.get_text() == '':
-            self.blank_entry_from_new_host()
-        elif self.attribute_value.get_text() == '':
-            self.blank_entry_from_new_host()
-        else:
-            self.add_attribute_window.hide()
-            self.read_config()
-            self.baglantilar[self.get_host_before][self.attribute_name.get_text()] = self.attribute_value.get_text()
-            self.write_config()
-            self.notebooks(self.get_host_before)
-            self.notebook.set_current_page(0)
-    
-    def on_click_sftp(self,widget):
-        try:
-            control_command = 'grep -F ' + getpass.getuser() +' ~/.ssh/authorized_keys'
-            control_auth = run(['ssh','-T',self.get_host_before], stdout=PIPE, input=control_command, encoding='utf-8',timeout=1)
-            a = control_auth.stdout
-            b = list()
-            b = a.split('\n')
-            for i in b:
-                if getpass.getuser() in i:
-                    c = b.index(i)
-      
-            os.chdir(self.home+'/.ssh')
-            os.system('ls -d "$PWD"/* > /tmp/listOfFiles.list')
-
-            with open('/tmp/listOfFiles.list') as y:
-                s = list()
-                s = y.readlines()
-
-                for i in s:
-                    os.system(' ')
-                    i = i.rstrip('\n')
-                    d = run(['cat',i],stdout=PIPE)
-                    if d.stdout.decode('ascii') ==  b[c] + '\n':
-                        e = i  
-                        break      
-
-            sftpURL   =  self.baglantilar[self.get_host_before]['Hostname']
-            sftpUser  =  self.baglantilar[self.get_host_before]['User']
-                    #sftpPass  =  self.connect_password.get_text()
-
-
-            mySSHK   = e
-            sshcon   = paramiko.SSHClient()  # will create the object
-            sshcon.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # no known_hosts error
-            sshcon.connect(sftpURL, username=sftpUser, key_filename=mySSHK)
-
-            self.ftp = sshcon.open_sftp()
-            self.localpath='/home'
-            self.remotepath='/home' 
-            self.sftp_file_transfer('clicked')
-        except:
-            self.enter_password()
-            self.connect_button.connect('clicked',self.normal_auth)
-
-            
-    def normal_auth(self,clicked):
-        try:
-            sftpURL   =  self.baglantilar[self.get_host_before]['Hostname']
-            sftpUser  =  self.baglantilar[self.get_host_before]['User']
-            sftpPass  =  self.connect_password.get_text()
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy( paramiko.AutoAddPolicy() )  
-
-            ssh.connect(sftpURL, username=sftpUser, password=sftpPass )
-            self.ftp = ssh.open_sftp()
-            self.localpath='/home'
-            self.remotepath='/home'   
-            self.sftp_file_transfer('clicked') 
-            self.connect_window.hide()    
-
-        except paramiko.ssh_exception.AuthenticationException:
-            self.sftp_fail() 
-
-    ########################## Parola Penceresi İşlemleri #####################################
-
-    def enter_password(self): # Parola giriş ekranı
-        self.connect_window = Gtk.Window()
-        self.connect_window.set_title("Parola Giriş Ekranı")
-        self.connect_window.set_border_width(10)
-        table4 = Gtk.Table(n_rows=3, n_columns=3, homogeneous=False)
-
-        self.connect_password = Gtk.Entry()
-        self.connect_button = Gtk.Button(label = "Bağlan")
-        connect_label = Gtk.Label(label = "Sunucu parolanızı girin.")
-
-        self.connect_password.set_placeholder_text("Parola")
-        self.connect_password.set_visibility(False)
-
-        self.connect_window.add(table4)
-
-        table4.attach(connect_label,0,3,0,1)
-        table4.attach(self.connect_password,1,3,1,2)
-        table4.attach(self.connect_button,1,3,2,3)
-
-        self.connect_window.present()
-        self.connect_window.show_all()
-
-    def wrong_password_win(self): # Şifre yanlış olduğunda gösterilecek pencere
-        table5 = Gtk.Table(n_rows=2, n_columns=3, homogeneous=True)
-        self.wrong_pass_win = Gtk.Window()
-        self.wrong_pass_win.set_title("Hata !")
-        self.wrong_pass_win.add(table5)
-
-        wrong_pass_label = Gtk.Label(label = "Hatalı Parola")
-        table5.attach(wrong_pass_label,0,3,0,1)
-
-        try_again_button = Gtk.Button(label = "Tekrar Deneyin")
-        try_again_button.connect("clicked",self.hide)
-
-        table5.attach(try_again_button,1,2,1,2)
-        self.wrong_pass_win.show_all()
-    
-    def hide(self,event):
-        self.wrong_pass_win.hide()
-
-    def send_password(self,event): # İlgili makineye login işlemi
-        self.terminal2     = Vte.Terminal()
-        self.terminal2.spawn_sync(
-            Vte.PtyFlags.DEFAULT,
-            os.environ[HOME],
-            SHELLS,
-            [],
-            GLib.SpawnFlags.DO_NOT_REAP_CHILD,
-            None,
-            None,)
-
-        self.new_page = Gtk.Box()
-        self.new_page.set_border_width(10)
-
-        self._button_box = Gtk.HBox()
-        self._button_box.get_style_context().add_class("right")
-
-        self.close_button()
-        self.new_page.add(self.terminal2)
-        self.notebook.append_page(self.new_page, self._button_box)
-
-        self.number = self.notebook.page_num(self.new_page)
-        self.number_list.append(self.number)
-        self.number_list.pop()
-
-        self.aranan = self.baglantilar[self.labelmenu]['Hostname']
-        
-        self.fp_check = "ssh-keygen -H -F " + self.aranan + " 2>&1 | tee /tmp/control.txt\n"
-        self.command = "ssh " + self.labelmenu + " 2>&1 | tee /tmp/control.txt\n"
-        self.password = self.connect_password.get_text() + "\n" 
-
-        self.terminal2.feed_child(self.fp_check.encode("utf-8"))
-        time.sleep(0.5)
-        with open('/tmp/control.txt','r') as t:
-            t_list = list()
-            t_list = t.readlines()
-            length = len(t_list)
-
-            if length > 0:
-                self.terminal2.feed_child(self.command.encode("utf-8"))
-                time.sleep(0.5) 
-
-                self.terminal2.feed_child(self.password.encode("utf-8"))
-                time.sleep(2) 
-
-                self.c_check()
-                time.sleep(0.5)
-
-                self.is_correct()
-                self.connect_window.hide()
-            
-            else:
-                self.connect_window.hide()
-                self.first_connection()
-
-    ########################## Login Kontrol İşlemleri #####################################
-
-    def first_connection(self): # Makineye ilk kez bağlanılıyorsa
-        table8 = Gtk.Table(n_rows=10, n_columns=20, homogeneous=False)
-        self.first_connection_window = Gtk.Window()
-        self.first_connection_window.set_default_size(300, 90)
-        self.first_connection_window.add(table8)
-        self.first_connection_window.set_title("Emin misiniz ? ")
-
-        first_connection_yes_btn = Gtk.Button(label = "Devam Et")
-        table8.attach(first_connection_yes_btn,1,10,4,8)
-        first_connection_yes_btn.connect("clicked",self.yes_button_clicked)
-        
-        first_connection_no_btn = Gtk.Button(label = "Ayrıl")
-        table8.attach(first_connection_no_btn,11,19,4,8)
-        first_connection_no_btn.connect("clicked",self.no_button_clicked)
-
-        first_connection_label = Gtk.Label(label = "     Bu sunucuya ilk kez bağlanıyorsunuz. Devam etmek istediğinize emin misiniz ?  (evet/hayır/[fingerprint])?    ")
-        table8.attach(first_connection_label,0,20,0,2)
-
-        self.first_connection_window.show_all()   
-    
-    def yes_button_clicked(self,event): # Sunucuya ilk kez bağlanılması kabul edildiyse
-        self.terminal2.feed_child(self.command.encode("utf-8"))
-        time.sleep(0.5) 
-
-        answer = 'yes\n'
-
-        self.terminal2.feed_child(answer.encode("utf-8"))
-        time.sleep(0.5) 
-
-        self.terminal2.feed_child(self.password.encode("utf-8"))
-        time.sleep(2) 
-
-        self.is_correct()
-        self.connect_window.hide()
-        self.first_connection_window.hide()
-    
-    def no_button_clicked(self,event): # Sunucuya ilk kez bağlanılması reddedildiyse
-        self.first_connection_window.hide()
-        self.connect_window.hide()
-    
-    def c_check(self): # Bağlanılmak istenen sunucunun IP'si başka bir sunucu tarafından alınmış mı kontrolü 
-        
-        with open('/tmp/control.txt','r') as y:
-            string_change = y.read()
-            word = "@@@@@@"
-
-            if word in string_change:
-                self.connect_window.hide()
-                self.host_change()
-            
-            else:
-                pass
-
-    def host_change(self): # Bağlanılmak istenen sunucunun IP'si başka bir sunucu tarafından alınmışsa değişiklik için
-                           # Gösterilecek ekran
-        table9 = Gtk.Table(n_rows=1, n_columns=3, homogeneous=True)
-        self.host_change_window = Gtk.Window()
-        self.host_change_window.set_title("Dikkat !")
-        
-        self.host_change_entry = Gtk.Entry()
-        self.host_change_entry.set_placeholder_text("Evet değişiklik yap.")
-
-        host_change_label = Gtk.Label(label = "Bağlanmak istediğiniz sunucu ip'si başka bir sunucu tarafından alınmış olabilir.\nKnown değişimini onaylıyorsanız --  Evet değişiklik yap  -- yazın")
-        table9.attach(host_change_label,0,3,0,1)
-        table9.attach(self.host_change_entry,1,2,1,2)
-
-        host_change_button = Gtk.Button(label = "Send")
-        host_change_button.connect("clicked",self.on_click_host_change)
-
-        table9.attach(host_change_button,1,2,2,3)
-        self.host_change_window.show_all()   
-        self.notebook.remove_page(-1)
-    
-    def on_click_host_change(self,event): # Host değişimi onaylandıysa 
-        entry = self.host_change_entry.get_text()
-        hostname = self.baglantilar[self.labelmenu]['Hostname']
-        degistir = "ssh-keygen -R " + hostname +"\n"
-
-        if entry.lower() == "evet değişiklik yap":
-            self.terminal2.feed_child(degistir.encode("utf-8"))
-            self.host_change_window.hide()
-            self.enter_password()
-            self.connect_button.connect('clicked',self.send_password)
-
-    def is_correct(self):
-        with open('/tmp/control.txt','r') as correct_file:            
-            correct_list = list()
-            correct_list = correct_file.readlines()
-            length = len(correct_list)
-            
-            if length > 3:
-                self.notebook.show_all()
-                self.notebook.set_current_page(-1)
-            else:
-                self.notebook.remove(self.new_page)
-                self.wrong_password_win()
-
-    ########################## SCP İşlemleri #####################################
-    
-    def file_choose(self,event): # File choose dialog
-        
-        name_list = []
-        filechooserdialog = Gtk.FileChooserDialog(title="Göndermek istediğiniz dosyayı seçin.",
-             parent=None,
-             action=Gtk.FileChooserAction.OPEN)
-        filechooserdialog.add_buttons("_Gönder", Gtk.ResponseType.OK)
-        filechooserdialog.add_buttons("_Ayrıl", Gtk.ResponseType.CANCEL)
-        filechooserdialog.set_default_response(Gtk.ResponseType.OK)
-
-        response = filechooserdialog.run()
-
-        if response == Gtk.ResponseType.OK:
-            print("File selected: %s" % filechooserdialog.get_filename())
-            self.send_file_path = filechooserdialog.get_filename()
-            name_list = self.send_file_path.split('/')
-            self.file_name = name_list[-1]
-        
-        if response == Gtk.ResponseType.CANCEL:
-            filechooserdialog.destroy()
-
-        self.transfer()
-
-        filechooserdialog.destroy()
-        self.connect_window.hide()
-        
-    def send_file(self,event): # SCP Bağlantısı
-        ssh = SSHClient()
-        ssh.load_system_host_keys()
-
-        ip_adress = self.baglantilar[self.labelmenu]['Hostname']
-        username = self.baglantilar[self.labelmenu]['User']
-        password = self.connect_password.get_text()
-
-        try:
-            ssh.connect(ip_adress,username=username,password=password)
-            self.connect_window.hide()
-            self.select_file()
-            
-        except paramiko.SSHException:
-            print("Hatalı giriş bilgileri !")
-            self.connect_window.hide()
-            self.scp_transfer("clicked")
-    
-    def transfer(self):
-        ssh = SSHClient()
-        ssh.load_system_host_keys()
-        ip_adress = self.baglantilar[self.labelmenu]['Hostname']
-        username = self.baglantilar[self.labelmenu]['User']
-        password = self.connect_password.get_text()
-        ssh.connect(ip_adress,username=username,password=password)
-        scp = SCPClient(ssh.get_transport())
-        scp.put(self.send_file_path, self.file_name)
-        scp.close()   
-    
-    def scp_transfer(self,event): # Ara yönlendirme fonksiyonu
-
-
-        self.enter_password()
-        self.connect_button.connect('clicked',self.send_file)
-        
-    def select_file(self): # Dosya seçme ara penceresi
-        choose_file_winbtn = Gtk.Window()
-        choose_file_winbtn.set_title("Dosya Seç")
-        choose_file_winbtn.set_default_size(200, 200)
-        choose_file_winbtn.set_border_width(20)
-
-        table6 = Gtk.Table(n_rows=1, n_columns=1, homogeneous=True)
-        choose_file_winbtn.add(table6)
-        
-        choose_file_btn_ = Gtk.Button(label ="Dosya Seç")
-        choose_file_winbtn.add(choose_file_btn_) 
-        choose_file_btn_.connect("clicked",self.file_choose)      
-
-        table6.attach(choose_file_btn_,0,1,0,1)
-        choose_file_winbtn.show_all()
-        self.connect_window.hide()
-    
-    ########################## SFTP İşlemleri #####################################
-        
-    def sftp_file_transfer(self,event):
-        if self.notebook.get_current_page() != 0:
-            degisken = self.notebook.get_current_page()
-            self.notebook.remove_page(degisken)
-            
-        table7 = Gtk.Table(n_rows=10, n_columns=30, homogeneous=True)
-        self.page1 = Gtk.Box()
-        self.page1.set_border_width(10)
-        self.page1.add(table7)
-        self._button_box = Gtk.HBox()
-        self._button_box.get_style_context().add_class("right")
-        
-        self.close_button_2()
-
-        self.localTree(self.localpath)
-        self.remoteTree(self.remotepath)
-        self.toolbar()        
- 
-        table7.attach(self.scrollView,0,15,1,10)       
-        table7.attach(self.scrollView2,16,30,1,10)
-        table7.attach(self.local_search,0,15,0,1)
-        table7.attach(self.remote_search,16,30,0,1)
-        self.notebook.append_page(self.page1, self._button_box)
-
-        self.number = self.notebook.page_num(self.page1)
-        self.number_list.append(self.number)
-        self.number_list.pop()
-        
-        self.notebook.show_all()
-        self.notebook.set_current_page(-1)
-    
-    def on_drag_data_get(self, widget, drag_context, data, info, time):
-        select = widget.get_selection()
-        model, treeiter = select.get_selected()
-        if treeiter != None:
-            data.set_text(model[treeiter][2],-1)
-
-    def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
-        model=widget.get_model()
-        drop_info = widget.get_dest_row_at_pos(x, y)
-        if drop_info:
-            path, position = drop_info
-            iter = model.get_iter(path)
-            remotepath=model[iter][2]
-            localpath = data.get_text()
-            localpath_list = []
-            localpath_list = localpath.split('/')
-            print("Received text: %s" % localpath)
-            print("Received text: %s" % remotepath)
-
-            if os.path.isdir(localpath):  
-                self.put_dir(localpath,remotepath) 
-            elif os.path.isfile(localpath):  
-                remotepathfile=remotepath+"/"+localpath_list[-1]
-                self.ftp.put(localpath, remotepathfile) 
-        
-
-    def put_dir(self, source, target):
-        localpath_list = []
-        localpath_list = source.split('/')
-
-        self.ftp.mkdir(target+"/"+localpath_list[-1])
-        self.ftp.chdir(target+"/"+localpath_list[-1])
-        target=target+"/"+localpath_list[-1]
-        for dirpath, dirnames, filenames in os.walk(source):
-            remote_path = os.path.join(target, dirpath[len(source)+1:])
-            try:
-                self.ftp.listdir(remote_path)
-            except IOError:
-                self.ftp.mkdir(remote_path)
-
-            for filename in filenames:
-                self.ftp.put(os.path.join(dirpath, filename), os.path.join(remote_path, filename))
-    
-    def on_drag_data_get_2(self, widget, drag_context, data, info, time):
-        select = widget.get_selection()
-        model, treeiter = select.get_selected()
-        if treeiter != None:
-            data.set_text(model[treeiter][2],-1)
-
-    def on_drag_data_received_2(self, widget, drag_context, x, y, data, info, time):
-        model=widget.get_model()
-        drop_info = widget.get_dest_row_at_pos(x, y)
-        if drop_info:
-            path, position = drop_info
-            iter = model.get_iter(path)
-            remotepath=model[iter][2]
-            localpath = data.get_text()
-            localpath_list = []
-            localpath_list = localpath.split('/')
-            print("Received text: %s" % localpath)
-            print("Received text: %s" % remotepath)
-            remotepath=remotepath+"/"+localpath_list[-1]
-
-            fileattr = self.ftp.lstat(localpath)
-            if S_ISDIR(fileattr.st_mode):
-                self.download_dir(localpath,remotepath)
-            if S_ISREG(fileattr.st_mode):
-                self.ftp.get(localpath,remotepath)
-        
-
-    def download_dir(self,remote_dir, local_dir):
-        
-        os.path.exists(local_dir) or os.makedirs(local_dir)
-        dir_items = self.ftp.listdir_attr(remote_dir) ##
-        
-        for item in dir_items:
-
-            remote_path = remote_dir + '/' + item.filename         
-            local_path = os.path.join(local_dir, item.filename)
-            if S_ISDIR(item.st_mode):
-                self.download_dir(remote_path, local_path)
-            else:
-                self.ftp.get(remote_path, local_path)
-
-    def localTree(self,localroot):
-        
-        fileSystemTreeStore = Gtk.TreeStore(str, Pixbuf, str)
-        populateFileSystemTreeStore(fileSystemTreeStore, localroot)
-        fileSystemTreeView = Gtk.TreeView(model = fileSystemTreeStore)
-        treeViewCol = Gtk.TreeViewColumn("Ana makina")
-        
-        colCellText = Gtk.CellRendererText()
-        colCellImg = Gtk.CellRendererPixbuf()
-        treeViewCol.pack_start(colCellImg, False)
-        treeViewCol.pack_start(colCellText, True)
-        treeViewCol.add_attribute(colCellText, "text", 0)
-        treeViewCol.add_attribute(colCellImg, "pixbuf", 1)
-        fileSystemTreeView.append_column(treeViewCol)
-        fileSystemTreeView.connect("row-expanded", onRowExpanded)
-        fileSystemTreeView.connect("row-collapsed", onRowCollapsed)
-        fileSystemTreeView.columns_autosize()
-    
-        fileSystemTreeView.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
-        fileSystemTreeView.connect("drag-data-get", self.on_drag_data_get)
-
-        fileSystemTreeView.enable_model_drag_dest(TARGETS, DRAG_ACTION)
-        fileSystemTreeView.connect("drag-data-received", self.on_drag_data_received_2)
-
-        self.scrollView = Gtk.ScrolledWindow()
-        self.scrollView.set_min_content_width(225)
-        self.scrollView.add(fileSystemTreeView)
-
-    def remoteTree(self,remoteroot):
-        ssh_connect(self.ftp)  
-        fileSystemTreeStore2 = Gtk.TreeStore(str, Pixbuf, str)
-        populateFileSystemTreeStore2(fileSystemTreeStore2, remoteroot)
-        fileSystemTreeView2 = Gtk.TreeView(model = fileSystemTreeStore2)
-        treeViewCol2 = Gtk.TreeViewColumn("Bağlanılan makina")
-        treeViewCol2.set_min_width(225)
-   
-        colCellText2 = Gtk.CellRendererText()
-        colCellImg2 = Gtk.CellRendererPixbuf()
-        treeViewCol2.pack_start(colCellImg2, False)
-        treeViewCol2.pack_start(colCellText2, True)
-        treeViewCol2.add_attribute(colCellText2, "text", 0)
-        treeViewCol2.add_attribute(colCellImg2, "pixbuf", 1)
-        fileSystemTreeView2.append_column(treeViewCol2)
-        fileSystemTreeView2.connect("row-expanded", onRowExpanded2)
-        fileSystemTreeView2.connect("row-collapsed", onRowCollapsed2)
-        select2 = fileSystemTreeView2.get_selection()
-        select2.connect("changed", on_tree_selection_changed2)
-        fileSystemTreeView2.columns_autosize()
-
-        fileSystemTreeView2.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
-        fileSystemTreeView2.connect("drag-data-get", self.on_drag_data_get_2)
-
-        fileSystemTreeView2.enable_model_drag_dest(TARGETS, DRAG_ACTION)
-        fileSystemTreeView2.connect("drag-data-received", self.on_drag_data_received)
-
-        self.scrollView2 = Gtk.ScrolledWindow()
-        self.scrollView2.set_min_content_width(225)
-        self.scrollView2.add(fileSystemTreeView2)
-
-        self.local_search = Gtk.SearchEntry() # Searchbox tanımlanması
-        self.local_search.connect("activate",self.on_local_search_activated)
-
-        self.remote_search = Gtk.SearchEntry() # Searchbox tanımlanması
-        self.remote_search.connect("activate",self.on_remote_search_activated)
-        
-    def on_local_search_activated(self,clicked):
-        self.degisken=self.localpath
-        try:
-            self.localpath=self.local_search.get_text()
-            self.sftp_file_transfer('clicked')
-        except:
-            self.localpath=self.degisken
-            self.sftp_file_transfer('clicked')
-        
-    def on_remote_search_activated(self,clicked):
-        self.degiskenrem=self.remotepath
-        try:
-            self.remotepath=self.remote_search.get_text()
-            self.sftp_file_transfer('clicked')
-        except:
-            self.remotepath=self.degiskenrem
-            self.sftp_file_transfer('clicked')
-    
-    def sftp_fail(self):
-        self.auth_except_win = Gtk.Window()
-        self.auth_except_win.set_title("Hata mesajı")
-        self.auth_except_win.set_default_size(200, 200)
-        self.auth_except_win.set_border_width(20)
-
-        self.table10 = Gtk.Table(n_rows=1, n_columns=1, homogeneous=True)
-        self.auth_except_win.add(self.table10)
-            
-        auth_except_label = Gtk.Label(label = "Giriş başarısız. Giriş bilgilerini kontrol edin.")
-        self.auth_except_win.add(auth_except_label)       
-
-        self.table10.attach(auth_except_label,0,1,0,1)
-        self.auth_except_win.show_all()
-        self.connect_window.hide()
-    
 window = MyWindow()
 window.show_all()
 Gtk.main()
