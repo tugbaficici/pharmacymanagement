@@ -167,6 +167,7 @@ class MyWindow(Gtk.Window):
         satis_medicineLabel = Gtk.Label(label = "Medicines")
 
         self.satis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
+        self.satis_checkoutButton.connect('clicked',self.proceedScreen)
 
         self.satis_Table.attach(satis_patienceLabel,0,3,0,1)
         self.satis_Table.attach(satis_patientSearch,0,2.5,1,2)
@@ -517,6 +518,47 @@ class MyWindow(Gtk.Window):
         self.add_factoriesWindow.present()
         self.add_factoriesWindow.show_all()
     
+    def proceedScreen(self,event):
+        self.proceedWindow = Gtk.Window()
+        self.proceedWindow.set_title("Add New Factory")
+        self.proceedWindow.set_border_width(10)
+
+        proceedTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        self.proceedWindow.add(proceedTable)
+
+        proceedLabel = Gtk.Label(label= "Proceed to ")
+        proceedMedicineLabel = Gtk.Label(label = "Medicines")
+        proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
+        proceedAmount = Gtk.Label(label = "30 ₺" )
+
+        proceedNo = Gtk.Label(label = "Proceed No : ")
+        proceedName = Gtk.Label(label = "Name : ")
+        proceedSurname = Gtk.Label(label = "Surname : ")
+        proceedTC = Gtk.Label(label = "TC No:")
+        proceedMail = Gtk.Label(label = "Email : ")
+
+        proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
+        self.proceedButton = Gtk.Button(label = "Send")
+        self.proceedExit = Gtk.Button(label = "Exit")
+
+        self.cart_tablo()
+        proceedTable.attach(proceedLabel,4,6,0,1)
+        proceedTable.attach(proceedMedicineLabel,0,5,1,2)
+        proceedTable.attach(self.scroll_cartTable,0,5,2,8)
+        proceedTable.attach(proceedTotal,0,2,8,10)
+        proceedTable.attach(proceedAmount,2,4,8,10)
+        proceedTable.attach(proceedNo,5,8,1,2)
+        proceedTable.attach(proceedTC,5,8,2,3)
+        proceedTable.attach(proceedName,5,8,3,4)
+        proceedTable.attach(proceedSurname,5,8,4,5)
+        proceedTable.attach(proceedMail,5,8,5,6)
+        proceedTable.attach(proceedAttention,5,10,7,8)
+        proceedTable.attach(self.proceedButton,5,8,8,10)
+        proceedTable.attach(self.proceedExit,8,10,8,10)
+
+        self.proceedWindow.present()
+        self.proceedWindow.show_all()
+
     ### Tablolar ###
     listmodel = Gtk.ListStore(str, str, str,str,str)
     def hasta_tablo(self):
