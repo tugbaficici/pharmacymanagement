@@ -240,6 +240,8 @@ class MyWindow(Gtk.Window):
         self.ilac_activeEntry = Gtk.Entry()
         self.ilac_pieceEntry = Gtk.Entry()
         self.ilac_priceEntry = Gtk.Entry()
+        self.ilac_factoryEntry = Gtk.Entry()
+        self.ilac_prosEntry = Gtk.Entry()
         
 
         ilac_nameLabel = Gtk.Label(label = "Name :")
@@ -247,27 +249,36 @@ class MyWindow(Gtk.Window):
         ilac_activeLabel = Gtk.Label(label = "Active :")
         ilac_pieceLabel = Gtk.Label(label = "Piece :")
         ilac_priceLabel = Gtk.Label(label = "Price :")
+        ilac_factoryLabel = Gtk.Label(label = "Factory :")
+        ilac_prosLabel = Gtk.Label(label = "Prospectus :")
         
 
         self.ilac_addButton = Gtk.Button(label = "Add") 
         self.ilac_addButton.connect('clicked',self.ilac_addButtonEvent)    
         
-        self.ilac_addTable.attach(ilac_nameLabel,1,2,2,3)
-        self.ilac_addTable.attach(self.ilac_nameEntry,3,5,2,3)
+        self.ilac_addTable.attach(ilac_nameLabel,1,2,1,2)
+        self.ilac_addTable.attach(self.ilac_nameEntry,3,5,1,2)
 
-        self.ilac_addTable.attach(ilac_doseLabel,6,7,2,3)
-        self.ilac_addTable.attach(self.ilac_doseEntry,8,10,2,3)
+        self.ilac_addTable.attach(ilac_doseLabel,6,7,1,2)
+        self.ilac_addTable.attach(self.ilac_doseEntry,8,10,1,2)
 
-        self.ilac_addTable.attach(ilac_activeLabel,1,2,4,5)
-        self.ilac_addTable.attach(self.ilac_activeEntry,3,5,4,5)
+        self.ilac_addTable.attach(ilac_activeLabel,1,2,3,4)
+        self.ilac_addTable.attach(self.ilac_activeEntry,3,5,3,4)
 
-        self.ilac_addTable.attach(ilac_pieceLabel,6,7,4,5)
-        self.ilac_addTable.attach(self.ilac_pieceEntry,8,10,4,5)
+        self.ilac_addTable.attach(ilac_pieceLabel,6,7,3,4)
+        self.ilac_addTable.attach(self.ilac_pieceEntry,8,10,3,4)
 
-        self.ilac_addTable.attach(ilac_priceLabel,1,2,6,7)
-        self.ilac_addTable.attach(self.ilac_priceEntry,3,5,6,7)
+        self.ilac_addTable.attach(ilac_prosLabel,1,2,5,6)
+        self.ilac_addTable.attach(self.ilac_prosEntry,3,5,5,6)
 
-        self.ilac_addTable.attach(self.ilac_addButton,8,10,6,7)
+        self.ilac_addTable.attach(ilac_factoryLabel,6,7,5,6)
+        self.ilac_addTable.attach(self.ilac_factoryEntry,8,10,5,6)
+
+        self.ilac_addTable.attach(ilac_priceLabel,1,2,7,8)
+        self.ilac_addTable.attach(self.ilac_priceEntry,3,5,7,8)
+
+        
+        self.ilac_addTable.attach(self.ilac_addButton,8,10,7,8)
 
         self.ilac_addTable.show_all()
     
@@ -995,9 +1006,9 @@ class MyWindow(Gtk.Window):
 
     
     def ilac_addButtonEvent(self,event):
-        self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE) Values(?,?,?,?,?)",
+        self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE,FACTORY,PROSPECTUS) Values(?,?,?,?,?,?,?)",
             (self.ilac_nameEntry.get_text(),self.ilac_doseEntry.get_text(),self.ilac_activeEntry.get_text(),self.ilac_pieceEntry.get_text(),
-                                                                                                            self.ilac_priceEntry.get_text()))
+            self.ilac_priceEntry.get_text(),self.ilac_factoryEntry.get_text(),self.ilac_prosEntry.get_text()))
         self.con.commit()
 
         self.ilac_nameEntry.set_text('')
@@ -1005,6 +1016,8 @@ class MyWindow(Gtk.Window):
         self.ilac_activeEntry.set_text('')
         self.ilac_pieceEntry.set_text('')
         self.ilac_priceEntry.set_text('')
+        self.ilac_prosEntry.set_text('')
+        self.ilac_factoryEntry.set_text('')
 
         self.ilac_listmodel.clear()
         self.ilac_vericekme_query()
