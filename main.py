@@ -520,17 +520,17 @@ class MyWindow(Gtk.Window):
     
     def proceedScreen(self,event):
         self.proceedWindow = Gtk.Window()
-        self.proceedWindow.set_title("Add New Factory")
+        self.proceedWindow.set_title("Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
         self.proceedWindow.set_border_width(10)
 
         proceedTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
         self.proceedWindow.add(proceedTable)
 
-        proceedLabel = Gtk.Label(label= "Proceed to ")
+        proceedLabel = Gtk.Label(label= "Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
         proceedMedicineLabel = Gtk.Label(label = "Medicines")
         proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
         proceedAmount = Gtk.Label(label = "30 ₺" )
-
+        
         proceedNo = Gtk.Label(label = "Proceed No : ")
         proceedName = Gtk.Label(label = "Name : ")
         proceedSurname = Gtk.Label(label = "Surname : ")
@@ -538,8 +538,15 @@ class MyWindow(Gtk.Window):
         proceedMail = Gtk.Label(label = "Email : ")
 
         proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
+
         self.proceedButton = Gtk.Button(label = "Send")
         self.proceedExit = Gtk.Button(label = "Exit")
+        self.proceedExit.connect('clicked',self.proceedex)
+        
+        proceedTCLabel = Gtk.Label(label = self.proceedPatTC)
+        proceedNameLabel = Gtk.Label(label = self.proceedPatName)
+        proceedSurnameLabel = Gtk.Label(label = self.proceedPatSurname)
+        proceedMailLabel = Gtk.Label(label = self.proceedPatMail)
 
         self.cart_tablo()
         proceedTable.attach(proceedLabel,4,6,0,1)
@@ -548,16 +555,26 @@ class MyWindow(Gtk.Window):
         proceedTable.attach(proceedTotal,0,2,8,10)
         proceedTable.attach(proceedAmount,2,4,8,10)
         proceedTable.attach(proceedNo,5,8,1,2)
+
         proceedTable.attach(proceedTC,5,8,2,3)
         proceedTable.attach(proceedName,5,8,3,4)
         proceedTable.attach(proceedSurname,5,8,4,5)
         proceedTable.attach(proceedMail,5,8,5,6)
+        
+        proceedTable.attach(proceedTCLabel,8,10,2,3)
+        proceedTable.attach(proceedNameLabel,8,10,3,4)
+        proceedTable.attach(proceedSurnameLabel,8,10,4,5)
+        proceedTable.attach(proceedMailLabel,8,10,5,6)
+
         proceedTable.attach(proceedAttention,5,10,7,8)
         proceedTable.attach(self.proceedButton,5,8,8,10)
         proceedTable.attach(self.proceedExit,8,10,8,10)
 
         self.proceedWindow.present()
         self.proceedWindow.show_all()
+    
+    def proceedex(self,event):
+        self.proceedWindow.hide()
 
     ### Tablolar ###
     listmodel = Gtk.ListStore(str, str, str,str,str)
@@ -575,6 +592,7 @@ class MyWindow(Gtk.Window):
             self.view.append_column(col)
         
         self.view.connect('button-press-event' , self.tablo_rightClick,'patients')
+        self.view.connect('button-press-event',self.tablo_leftClick,'patients')
         self.view.show_all()
         self.scroll_patientTable = Gtk.ScrolledWindow()
         self.scroll_patientTable.add(self.view)
@@ -911,6 +929,22 @@ class MyWindow(Gtk.Window):
             menu = self.context_menu()
             menu.popup( None, None, None,None, event.button, event.get_time())
             return True
+
+    def tablo_leftClick(self,treeview,event,tablename):
+        self.table_type = tablename
+
+        pthinfo = treeview.get_path_at_pos(event.x, event.y)
+        if pthinfo != None:
+            path,col,cellx,celly = pthinfo
+            treeview.grab_focus()
+            treeview.set_cursor(path,col,0)
+        selection = treeview.get_selection()
+        (model, iter) = selection.get_selected()
+        
+        self.proceedPatTC = model[iter][1]
+        self.proceedPatName = model[iter][2]
+        self.proceedPatSurname = model[iter][3]
+        self.proceedPatMail = model[iter][4]
     
     def tablo_rightClickFac(self,treeview, event,tablename):
         self.table_type = tablename
@@ -1140,8 +1174,6 @@ class MyWindow(Gtk.Window):
         for j in range(len(list_factoryNames)):
             if search_text in str(list_factoryNames[j]):
                 self.factories_listmodel.append(self.fabrika_listesi[j])
-    
-
     
 
     def on_click_clean(self,event):
