@@ -39,6 +39,7 @@ class MyWindow(Gtk.Window):
         self.satis_ekrani()
         self.alis_ekrani()
         self.ilac_ekrani()
+        self.settings_ekrani()
 
         self.page1 = Gtk.Box()
         self.page1.set_border_width(10)
@@ -67,7 +68,8 @@ class MyWindow(Gtk.Window):
 
         self.page4 = Gtk.Box()
         self.page4.set_border_width(10)
-        self.page4.add(Gtk.Label(label="Default Page!"))
+        self.page4.set_homogeneous(True)
+        self.page4.add(self.setting_table)
         self.notebook.append_page(self.page4, Gtk.Label(label="Settings"))       
     
         self.notebook.show_all()
@@ -99,6 +101,22 @@ class MyWindow(Gtk.Window):
 
         self.add(self.main_Table)
         self.show_all()
+
+    def settings_ekrani(self):
+
+        self.setting_table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        main_Label = Gtk.Label(label = "Open Source Pharmacy Management System")
+
+        self.setting_LogoutButton = Gtk.Button(label = "Çıkış Yap")
+        self.setting_LogoutButton.connect('clicked',self.log_out)
+        
+        self.setting_table.attach(main_Label,0,10,0,2)
+        
+    
+        self.setting_table.attach(self.setting_LogoutButton,0,10,2,3)
+
+        
+    
     
     def kayit_ekrani(self):
 
@@ -827,6 +845,10 @@ class MyWindow(Gtk.Window):
         ids = self.main_IdEntry.get_text()
         passw = self.main_PassEntry.get_text()
         self.kullanici_giris_query(ids,passw)
+    
+    def log_out(self,event):
+        self.remove(self.notebook)
+        self.giris_ekrani()
 
     #### İşlevsel Fonksiyonlar ####
 
@@ -1078,7 +1100,7 @@ class MyWindow(Gtk.Window):
                 self.factories_listmodel.append(self.fabrika_listesi[j])
     
 
-
+    
 
     def on_click_clean(self,event):
         self.cartlistmodel.clear()
