@@ -8,6 +8,7 @@ from gi.repository import Gdk, GLib,Pango
 
 hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
 ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE"]
+fabrika_columns = ["ID","NAME"]
 
 class MyWindow(Gtk.Window):
 
@@ -121,7 +122,6 @@ class MyWindow(Gtk.Window):
     def satis_ekrani(self):
         
         self.hasta_tablo()
-        
         self.satis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
 
         satis_patienceLabel = Gtk.Label(label = "Patients")
@@ -165,6 +165,9 @@ class MyWindow(Gtk.Window):
         alis_factoriesLabel = Gtk.Label(label = "Factories")
         alis_searchEntry = Gtk.SearchEntry()
         #satis_searchEntry.connect("activate")
+
+        alis_factoriesAddButton = Gtk.Button(label = 'Add')
+        alis_factoriesAddButton.connect('clicked',self.fabrika_ekle)
         
         alis_cartLabel = Gtk.Label(label = "Cart")
         alis_cartCleanButton = Gtk.Button(label = "Clean")
@@ -172,18 +175,26 @@ class MyWindow(Gtk.Window):
         alis_medicineSearch = Gtk.SearchEntry()
         alis_medicineLabel = Gtk.Label(label = "Medicines")
 
-        self.alis_Table.attach(alis_factoriesLabel,0,3,0,1)
-        self.alis_Table.attach(alis_searchEntry,0,3,1,2)
+        self.alis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
 
-        self.alis_Table.attach(alis_cartLabel,0,2,6,7)
-        self.alis_Table.attach(alis_cartCleanButton,2,3,6,7)
-        self.alis_Table.attach(self.view,0,3,7,10)
+        self.fabrika_tablo()
+        self.alis_Table.attach(alis_factoriesLabel,0,3,0,1)
+        self.alis_Table.attach(alis_searchEntry,0,2.5,1,2)
+        self.alis_Table.attach(alis_factoriesAddButton,2,3,1,2)
+        self.alis_Table.attach(self.scroll_factoriesTable,0,3,2,5)
+
+        self.cart_tablo()
+        self.alis_Table.attach(alis_cartLabel,0,2,5,6)
+        self.alis_Table.attach(alis_cartCleanButton,2,3,5,6)
+        self.alis_Table.attach(self.scroll_cartTable,0,3,6,9)
     
+        self.ilac_tablo()
         self.alis_Table.attach(alis_medicineLabel,3,10,0,1)
         self.alis_Table.attach(alis_medicineSearch,3,10,1,2)
+        self.alis_Table.attach(self.scroll_medicineTable,3,10,2,10)
+        self.alis_Table.attach(self.alis_checkoutButton,0,3,9,10)
 
-        self.alis_Table.attach(self.view,3,10,2,10)
-
+        self.fabrika_view.show_all()
         self.alis_Table.show_all()
     
     def ilac_ekrani(self):
@@ -366,6 +377,25 @@ class MyWindow(Gtk.Window):
 
         self.update_MedicineWindow.present()
         self.update_MedicineWindow.show_all()
+
+    def fabrika_ekle(self,event):
+        self.add_factoriesWindow = Gtk.Window()
+        self.add_factoriesWindow.set_title("Add New Factory")
+        self.add_factoriesWindow.set_border_width(10)
+
+        add_factoriesWindowTable = Gtk.Table(n_rows=3, n_columns=0, homogeneous=True)
+        self.add_factoriesWindow.add(add_factoriesWindowTable)
+
+        self.factory_Name = Gtk.Entry()
+        self.add_factorybutton = Gtk.Button(label ="Send")
+        self.add_factorybutton.connect('clicked',self.add_NewFactory)
+  
+        self.factory_Name.set_placeholder_text("Factory Name")
+        add_factoriesWindowTable.attach(self.factory_Name,0,1,0,1)
+        add_factoriesWindowTable.attach(self.add_factorybutton,0,1,2,3)
+
+        self.add_factoriesWindow.present()
+        self.add_factoriesWindow.show_all()
     
     ### Tablolar ###
     listmodel = Gtk.ListStore(str, str, str,str,str)
@@ -408,6 +438,26 @@ class MyWindow(Gtk.Window):
         self.scroll_medicineTable = Gtk.ScrolledWindow()
         self.scroll_medicineTable.add(self.ilac_view)
         self.scroll_medicineTable.show_all()  
+
+    factories_listmodel = Gtk.ListStore(str, str)
+    def fabrika_tablo(self):
+        self.fabrika_vericekme_query()
+        self.factories_listmodel.clear()
+        for i in range(len(self.fabrika_listesi)):
+            self.factories_listmodel.append(self.fabrika_listesi[i])
+        
+        self.fabrika_view = Gtk.TreeView(model=self.factories_listmodel)
+        for i, column in enumerate(fabrika_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.fabrika_view.append_column(col)
+        
+        self.view.connect('button-press-event' , self.tablo_rightClick,'factories')
+        self.view.show_all()
+
+        self.scroll_factoriesTable = Gtk.ScrolledWindow()
+        self.scroll_factoriesTable.add(self.fabrika_view)
+        self.scroll_factoriesTable.show_all()
 
     def cart_tablo(self):
         listmodel = Gtk.ListStore(str, str, str ,str ,str, str)
@@ -463,6 +513,21 @@ class MyWindow(Gtk.Window):
 
         for i in range(len(self.hasta_listesi)):
             self.listmodel.append(self.hasta_listesi[i])
+    
+    def add_NewFactory(self,event):
+
+        factory_Name = self.factory_Name.get_text()
+
+        self.cursor.execute("INSERT INTO factories(NAME) Values(?)",(factory_Name,))
+        self.con.commit()
+
+        self.add_factoriesWindow.hide()
+
+        self.factories_listmodel.clear()
+        self.fabrika_vericekme_query()
+
+        for i in range(len(self.fabrika_listesi)):
+            self.factories_listmodel.append(self.fabrika_listesi[i])
         
     def hasta_vericekme_query(self):
         self.cursor.execute("SELECT * FROM patients")
@@ -485,6 +550,18 @@ class MyWindow(Gtk.Window):
                 gecici_liste.append(str(j))
             
             self.ilac_listesi.append(gecici_liste)
+
+    def fabrika_vericekme_query(self):
+        self.cursor.execute("SELECT * FROM factories")
+        fabrika_list = self.cursor.fetchall()
+        self.fabrika_listesi = list()
+        for i in list(fabrika_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.fabrika_listesi.append(gecici_liste)
+
     
     #### Prio 2 Veri Tabanı Fonksiyonları ####
     
