@@ -159,7 +159,7 @@ class MyWindow(Gtk.Window):
         self.cart_tablo()
         satis_cartLabel = Gtk.Label(label = "Cart")
         satis_cartCleanButton = Gtk.Button(label = "Clean")
-        satis_cartCleanButton.connect('clicked',self.on_click_clean)
+        satis_cartCleanButton.connect('clicked',self.on_click_clean,1)
 
         self.ilac_tablo()
         satis_medicineSearch = Gtk.SearchEntry()
@@ -200,6 +200,7 @@ class MyWindow(Gtk.Window):
         
         alis_cartLabel = Gtk.Label(label = "Cart")
         alis_cartCleanButton = Gtk.Button(label = "Clean")
+        alis_cartCleanButton.connect('clicked',self.on_click_clean,2)
 
         alis_medicineSearch = Gtk.SearchEntry()
         alis_medicineLabel = Gtk.Label(label = "Medicines")
@@ -530,7 +531,10 @@ class MyWindow(Gtk.Window):
         proceedLabel = Gtk.Label(label= "Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
         proceedMedicineLabel = Gtk.Label(label = "Medicines")
         proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
-        proceedAmount = Gtk.Label(label = "30 ₺" )
+        amount=0
+        for i in self.cartlistmodel:
+                amount+=float(i[5])*int(i[7])
+        proceedAmount = Gtk.Label(label = str(amount)+" ₺" )
         
         proceedNo = Gtk.Label(label = "Proceed No : ")
         proceedName = Gtk.Label(label = "Name : ")
@@ -1180,9 +1184,13 @@ class MyWindow(Gtk.Window):
                 self.factories_listmodel.append(self.fabrika_listesi[j])
     
 
-    def on_click_clean(self,event):
-        self.cartlistmodel.clear()
-        self.geciciliste.clear()
+    def on_click_clean(self,event,carttip):
+        if(carttip==1):
+            self.cartlistmodel.clear()
+            self.geciciliste.clear()
+        if(carttip==2):
+            self.cartlistmodel2.clear()
+            self.geciciliste2.clear()
 
 window = MyWindow()
 window.show_all()
