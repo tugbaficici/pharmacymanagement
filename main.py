@@ -6,6 +6,8 @@ from gi.repository import Gtk
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk, GLib,Pango
 from mail import send_mail
+from datetime import date
+from reportlab.pdfgen import canvas
 
 hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
 ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY"]
@@ -108,18 +110,11 @@ class MyWindow(Gtk.Window):
 
         self.setting_table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
         main_Label = Gtk.Label(label = "Open Source Pharmacy Management System")
-
         self.setting_LogoutButton = Gtk.Button(label = "Çıkış Yap")
         self.setting_LogoutButton.connect('clicked',self.log_out)
-        
         self.setting_table.attach(main_Label,0,10,0,2)
-        
-    
         self.setting_table.attach(self.setting_LogoutButton,0,10,2,3)
 
-        
-    
-    
     def kayit_ekrani(self):
 
         self.kayit_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
@@ -364,23 +359,16 @@ class MyWindow(Gtk.Window):
 
         update_FactoryWindowTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
         self.update_FactoryWindow.add(update_FactoryWindowTable)
-
         self.update_factoryname = Gtk.Entry()
-        
-
         self.update_factoryname.set_text(str(liste[0][1]))
-        
-
+    
         self.update_FactoryButton = Gtk.Button(label ="Send")
         self.update_FactoryButton.connect('clicked',self.onclick_Update)
-  
         self.update_factoryname.set_placeholder_text("Factory Name")
        
-
         update_FactoryWindowTable.attach(self.update_factoryname,0,1,0,1)
         update_FactoryWindowTable.attach(self.update_FactoryButton,0,1,1,2)
       
-
         self.update_FactoryWindow.present()
         self.update_FactoryWindow.show_all()
 
@@ -503,7 +491,7 @@ class MyWindow(Gtk.Window):
         self.update_MedicineWindow.present()
         self.update_MedicineWindow.show_all()
 
-    def fabrika_ekle(self,event):
+    def fabrika_ekle(self):
         self.add_factoriesWindow = Gtk.Window()
         self.add_factoriesWindow.set_title("Add New Factory")
         self.add_factoriesWindow.set_border_width(10)
@@ -523,69 +511,91 @@ class MyWindow(Gtk.Window):
         self.add_factoriesWindow.show_all()
     
     def proceedScreen(self,event):
-        self.proceedWindow = Gtk.Window()
-        self.proceedWindow.set_title("Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
-        self.proceedWindow.set_border_width(10)
+        try:
+            self.proceedWindow = Gtk.Window()
+            self.proceedWindow.set_title("Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
+            self.proceedWindow.set_border_width(10)
+            proceedTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+            self.proceedWindow.add(proceedTable)
+            proceedLabel = Gtk.Label(label= "Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
+            proceedMedicineLabel = Gtk.Label(label = "Medicines")
+            proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
+            amount=0
+            medicines=""
+            for i in self.cartlistmodel:
+                    amount+=float(i[5])*int(i[7])
+                    medicines+=i[1]+"("+i[7]+"),"
+            proceedAmount = Gtk.Label(label = str(amount)+" ₺" )
+            self.cursor.execute("INSERT INTO bills(PATIENTTC,MEDICINES,AMOUNT) Values(?,?,?)",(self.proceedPatTC,medicines,amount))
+            self.con.commit() 
+            proceedName = Gtk.Label(label = "Name : ")
+            proceedSurname = Gtk.Label(label = "Surname : ")
+            proceedTC = Gtk.Label(label = "TC No:")
+            proceedMail = Gtk.Label(label = "Email : ")
+            proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
+            
+            #prospektüs string oluşturulcak
 
-        proceedTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
-        self.proceedWindow.add(proceedTable)
+            self.proceedButton = Gtk.Button(label = "Send")
+            #self.proceedButton.connect('clicked',send_mail,self.proceedPatMail,"deneme")
+            self.proceedButton.connect('clicked',self.decrease_amount)
+            self.proceedButton.connect('clicked',self.proceedex)
+            self.proceedExit = Gtk.Button(label = "Exit")
+            self.proceedExit.connect('clicked',self.proceedex)
+            
+            proceedTCLabel = Gtk.Label(label = self.proceedPatTC)
+            proceedNameLabel = Gtk.Label(label = self.proceedPatName)
+            proceedSurnameLabel = Gtk.Label(label = self.proceedPatSurname)
+            proceedMailLabel = Gtk.Label(label = self.proceedPatMail)
 
-        proceedLabel = Gtk.Label(label= "Proceed to "+self.proceedPatName + " " + self.proceedPatSurname)
-        proceedMedicineLabel = Gtk.Label(label = "Medicines")
-        proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
-        amount=0
-        medicines=""
-        for i in self.cartlistmodel:
-                amount+=float(i[5])*int(i[7])
-                medicines+=i[1]+"("+i[7]+"),"
-        proceedAmount = Gtk.Label(label = str(amount)+" ₺" )
-        self.cursor.execute("INSERT INTO bills(PATIENTTC,MEDICINES,AMOUNT) Values(?,?,?)",(self.proceedPatTC,medicines,amount))
-        self.con.commit() 
+            self.cart_tablo()
+            proceedTable.attach(proceedLabel,4,6,0,1)
+            proceedTable.attach(proceedMedicineLabel,0,5,1,2)
+            proceedTable.attach(self.scroll_cartTable,0,5,2,8)
+            proceedTable.attach(proceedTotal,0,2,8,10)
+            proceedTable.attach(proceedAmount,2,4,8,10)
+            
+            proceedTable.attach(proceedTC,5,8,2,3)
+            proceedTable.attach(proceedName,5,8,3,4)
+            proceedTable.attach(proceedSurname,5,8,4,5)
+            proceedTable.attach(proceedMail,5,8,5,6)
+            
+            proceedTable.attach(proceedTCLabel,8,10,2,3)
+            proceedTable.attach(proceedNameLabel,8,10,3,4)
+            proceedTable.attach(proceedSurnameLabel,8,10,4,5)
+            proceedTable.attach(proceedMailLabel,8,10,5,6)
+
+            proceedTable.attach(proceedAttention,5,10,7,8)
+            proceedTable.attach(self.proceedButton,5,8,8,10)
+            proceedTable.attach(self.proceedExit,8,10,8,10)
+
+            self.proceedWindow.present()
+            self.proceedWindow.show_all()
         
-        proceedName = Gtk.Label(label = "Name : ")
-        proceedSurname = Gtk.Label(label = "Surname : ")
-        proceedTC = Gtk.Label(label = "TC No:")
-        proceedMail = Gtk.Label(label = "Email : ")
+        except AttributeError:
+            self.errorWin("Please select a patient !")
+            
 
-        proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
-        
-        #prospektüs string oluşturulcak
+    def errorWin(self,error_text):
+        self.errorWindow = Gtk.Window()
+        self.errorWindow.set_title("Error !")
+        self.errorWindow.set_border_width(10)
 
-        self.proceedButton = Gtk.Button(label = "Send")
-        #self.proceedButton.connect('clicked',send_mail,self.proceedPatMail,"deneme")
-        self.proceedButton.connect('clicked',self.decrease_amount)
-        self.proceedButton.connect('clicked',self.proceedex)
-        self.proceedExit = Gtk.Button(label = "Exit")
-        self.proceedExit.connect('clicked',self.proceedex)
-        
-        proceedTCLabel = Gtk.Label(label = self.proceedPatTC)
-        proceedNameLabel = Gtk.Label(label = self.proceedPatName)
-        proceedSurnameLabel = Gtk.Label(label = self.proceedPatSurname)
-        proceedMailLabel = Gtk.Label(label = self.proceedPatMail)
+        errorTable = Gtk.Table(n_rows=2, n_columns=1, homogeneous=True)
+        self.errorWindow.add(errorTable)
 
-        self.cart_tablo()
-        proceedTable.attach(proceedLabel,4,6,0,1)
-        proceedTable.attach(proceedMedicineLabel,0,5,1,2)
-        proceedTable.attach(self.scroll_cartTable,0,5,2,8)
-        proceedTable.attach(proceedTotal,0,2,8,10)
-        proceedTable.attach(proceedAmount,2,4,8,10)
-        
-        proceedTable.attach(proceedTC,5,8,2,3)
-        proceedTable.attach(proceedName,5,8,3,4)
-        proceedTable.attach(proceedSurname,5,8,4,5)
-        proceedTable.attach(proceedMail,5,8,5,6)
-        
-        proceedTable.attach(proceedTCLabel,8,10,2,3)
-        proceedTable.attach(proceedNameLabel,8,10,3,4)
-        proceedTable.attach(proceedSurnameLabel,8,10,4,5)
-        proceedTable.attach(proceedMailLabel,8,10,5,6)
+        errorLabel = Gtk.Label(label = error_text)
+        self.errorButton = Gtk.Button(label ="Close")
+        self.errorButton.connect('clicked',self.error_close)
+  
+        errorTable.attach(errorLabel,0,1,0,1)
+        errorTable.attach(self.errorButton,0,1,1,2)
 
-        proceedTable.attach(proceedAttention,5,10,7,8)
-        proceedTable.attach(self.proceedButton,5,8,8,10)
-        proceedTable.attach(self.proceedExit,8,10,8,10)
-
-        self.proceedWindow.present()
-        self.proceedWindow.show_all()
+        self.errorWindow.present()
+        self.errorWindow.show_all()
+    
+    def error_close(self,event):
+        self.errorWindow.hide()
 
     def proceedScreen2(self,event):
         self.proceedWindow2 = Gtk.Window()
@@ -626,11 +636,8 @@ class MyWindow(Gtk.Window):
         proceedTable.attach(self.scroll_cartTable2,0,5,2,8)
         proceedTable.attach(proceedTotal,0,2,8,10)
         proceedTable.attach(proceedAmount,2,4,8,10)
-        
         proceedTable.attach(proceedName,5,8,3,4)
         proceedTable.attach(proceedNameLabel,8,10,3,4)
-        
-
         proceedTable.attach(proceedAttention,5,10,7,8)
         proceedTable.attach(self.proceedButton2,5,8,8,10)
         proceedTable.attach(self.proceedExit2,8,10,8,10)
@@ -649,6 +656,9 @@ class MyWindow(Gtk.Window):
                 self.cursor.execute("UPDATE medicines SET PIECE=? , SELLCOUNT=? WHERE ID=?",(count,sellcount,id))
                 self.con.commit()
         
+        self.create_invoice()
+        #self.proceedButton2.connect('clicked',send_mail,self.proceedPatMail,"deneme")
+        
         self.ilac_listmodel.clear()
         self.cartlistmodel.clear()
         self.geciciliste.clear()
@@ -656,6 +666,9 @@ class MyWindow(Gtk.Window):
 
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i]) 
+        
+        
+        
 
     def proceedex2(self,event):
         self.proceedWindow2.hide()
@@ -1329,6 +1342,92 @@ class MyWindow(Gtk.Window):
         if(carttip==2):
             self.cartlistmodel2.clear()
             self.geciciliste2.clear()
+
+    def create_invoice(self):
+        # Creating Canvas
+        c = canvas.Canvas("invoice.pdf",pagesize=(200,250),bottomup=0)
+        c.translate(10,40)
+        c.scale(1,-1)
+        c.drawImage("logo.jpg",0,0,width=50,height=30)
+
+        c.scale(1,-1)
+        c.translate(-10,-40)
+        c.setFont("Helvetica-Bold",10)
+        c.drawCentredString(125,20,"Open Source PMS")
+
+        c.line(70,22,180,22)
+        c.setFont("Helvetica-Bold",5)
+        c.drawCentredString(125,30,"Halkali Cad. No: 281")
+        c.drawCentredString(125,35," Halkali Mahallesi,Küçükçekmece / ISTANBUL ")
+        # Changing the font size for Specifying GST Number of firm
+        c.setFont("Helvetica-Bold",6)
+        c.drawCentredString(125,42,"P.K.:34303")
+
+        # Line Seprating the page header from the body
+        c.line(5,45,195,45)
+
+        # Document Information
+        # Changing the font for Document title
+        c.setFont("Courier-Bold",8)
+        c.drawCentredString(100,55,"PHARMACY INVOICE")
+
+        # This Block Consist of Costumer Details
+        c.roundRect(15,63,170,40,10,stroke=1,fill=0)
+        c.setFont("Times-Bold",5)
+        c.drawRightString(70,70,"INVOICE No. :")
+        c.drawRightString(70,80,"DATE :")
+        c.drawRightString(70,90,"CUSTOMER NAME :")
+        c.drawRightString(70,100,"E-MAIL :")
+        today = date.today()
+
+        c.drawCentredString(90,80,str(today))
+        c.drawCentredString(97,90,self.proceedPatName + " " + self.proceedPatSurname )
+        c.drawCentredString(105,100,self.proceedPatMail)
+
+        # This Block Consist of Item Description
+        c.roundRect(15,108,170,130,10,stroke=1,fill=0)
+        c.line(15,120,185,120)
+        c.drawCentredString(25,118,"ID")
+        c.drawCentredString(75,118,"NAME")
+        c.drawCentredString(125,118,"PRIECE")
+        c.drawCentredString(148,118,"PIECE")
+        c.drawCentredString(173,118,"TOTAL")
+
+        # Drawing table for Item Description
+        c.line(15,210,185,210)
+        c.line(35,108,35,220)
+        c.line(115,108,115,220)
+        c.line(135,108,135,220)
+        c.line(160,108,160,220)
+
+        y = 128
+        margin = 0
+        total = 0
+        for i in self.cartlistmodel:
+            amount = int(i[5]) * int(i[7])
+            c.drawCentredString(25,y + margin,i[0])
+            c.drawCentredString(75,y + margin,i[1])
+            c.drawCentredString(125,y + margin,i[5] + " TL")
+            c.drawCentredString(148,y + margin,i[7])
+            c.drawCentredString(173,y + margin,str(amount) + " TL")
+            total += amount
+            margin += 5
+        
+        c.drawCentredString(173,y + margin + 5 ,str(total) + " TL")
+
+        # Declaration and Signature
+        c.line(15,220,185,220)
+        c.line(100,220,100,238)
+        c.drawString(20,225,"The prospectus and your invoice ")
+        c.drawString(20,230,"will be sent to your e-mail.")
+        c.drawString(20,235,"Healthy Days !")
+        c.drawRightString(180,235,"OpenSourcePMS\nDigital Signature")
+
+        # End the Page and Start with new
+        c.showPage()
+        # Saving the PDF
+        c.save()
+
 
 window = MyWindow()
 window.show_all()
