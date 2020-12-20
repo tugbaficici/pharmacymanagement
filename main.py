@@ -911,16 +911,19 @@ class MyWindow(Gtk.Window):
     
 
     def cartUpdate(self,event):
-        self.geciciliste.append(self.Dragliste[0])
-        a=self.Dragliste[7]
-        b=self.Dragliste[8]
-        self.Dragliste.pop()
-        self.Dragliste.pop()
-        self.ddKutuSayisi.hide()
-        self.Dragliste.append(self.ddKutuSayisi_sayi.get_text())
-        self.Dragliste.append(a)
-        self.Dragliste.append(b)
-        self.cartlistmodel.append(self.Dragliste)
+        if(int(self.Dragliste[4])>=int(self.ddKutuSayisi_sayi.get_text())):
+            self.geciciliste.append(self.Dragliste[0])
+            a=self.Dragliste[7]
+            b=self.Dragliste[8]
+            self.Dragliste.pop()
+            self.Dragliste.pop()
+            self.ddKutuSayisi.hide()
+            self.Dragliste.append(self.ddKutuSayisi_sayi.get_text())
+            self.Dragliste.append(a)
+            self.Dragliste.append(b)
+            self.cartlistmodel.append(self.Dragliste)
+        else:
+            self.errorWin("Out of stock !")
     
     controlfactory=""
     
@@ -929,17 +932,20 @@ class MyWindow(Gtk.Window):
         # error ekle tek factory olabilir.
         #
         if((self.controlfactory== self.Dragliste[6]) or (self.controlfactory=="")):
-            self.controlfactory=self.Dragliste[6]
-            self.geciciliste2.append(self.Dragliste[0])
-            a=self.Dragliste[7]
-            b=self.Dragliste[8]
-            self.Dragliste.pop()
-            self.Dragliste.pop()
-            self.ddKutuSayisi2.hide()
-            self.Dragliste.append(self.ddKutuSayisi_sayi2.get_text())
-            self.Dragliste.append(a)
-            self.Dragliste.append(b)
-            self.cartlistmodel2.append(self.Dragliste)
+            if(int(self.Dragliste[4])>=int(self.ddKutuSayisi_sayi2.get_text())):
+                self.controlfactory=self.Dragliste[6]
+                self.geciciliste2.append(self.Dragliste[0])
+                a=self.Dragliste[7]
+                b=self.Dragliste[8]
+                self.Dragliste.pop()
+                self.Dragliste.pop()
+                self.ddKutuSayisi2.hide()
+                self.Dragliste.append(self.ddKutuSayisi_sayi2.get_text())
+                self.Dragliste.append(a)
+                self.Dragliste.append(b)
+                self.cartlistmodel2.append(self.Dragliste)
+            else:
+                self.errorWin("Out of stock !")
         else:
             self.errorWin("Please select same factory !")
         
