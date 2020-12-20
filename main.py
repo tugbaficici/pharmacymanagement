@@ -532,20 +532,26 @@ class MyWindow(Gtk.Window):
         proceedMedicineLabel = Gtk.Label(label = "Medicines")
         proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
         amount=0
+        medicines=""
         for i in self.cartlistmodel:
                 amount+=float(i[5])*int(i[7])
+                medicines+=i[1]+"("+i[7]+"),"
         proceedAmount = Gtk.Label(label = str(amount)+" ₺" )
+        self.cursor.execute("INSERT INTO bills(PATIENTTC,MEDICINES,AMOUNT) Values(?,?,?)",(self.proceedPatTC,medicines,amount))
+        self.con.commit() 
         
-        proceedNo = Gtk.Label(label = "Proceed No : ")
         proceedName = Gtk.Label(label = "Name : ")
         proceedSurname = Gtk.Label(label = "Surname : ")
         proceedTC = Gtk.Label(label = "TC No:")
         proceedMail = Gtk.Label(label = "Email : ")
 
         proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
+        
+        #prospektüs string oluşturulcak
 
         self.proceedButton = Gtk.Button(label = "Send")
-        self.proceedButton.connect('clicked',send_mail,self.proceedPatMail,"deneme")
+        #self.proceedButton.connect('clicked',send_mail,self.proceedPatMail,"deneme")
+        self.proceedButton.connect('clicked',self.decrease_amount)
         self.proceedButton.connect('clicked',self.proceedex)
         self.proceedExit = Gtk.Button(label = "Exit")
         self.proceedExit.connect('clicked',self.proceedex)
@@ -555,13 +561,15 @@ class MyWindow(Gtk.Window):
         proceedSurnameLabel = Gtk.Label(label = self.proceedPatSurname)
         proceedMailLabel = Gtk.Label(label = self.proceedPatMail)
 
+        
+
         self.cart_tablo()
         proceedTable.attach(proceedLabel,4,6,0,1)
         proceedTable.attach(proceedMedicineLabel,0,5,1,2)
         proceedTable.attach(self.scroll_cartTable,0,5,2,8)
         proceedTable.attach(proceedTotal,0,2,8,10)
         proceedTable.attach(proceedAmount,2,4,8,10)
-        proceedTable.attach(proceedNo,5,8,1,2)
+        
 
         proceedTable.attach(proceedTC,5,8,2,3)
         proceedTable.attach(proceedName,5,8,3,4)
@@ -583,6 +591,24 @@ class MyWindow(Gtk.Window):
     
     def proceedex(self,event):
         self.proceedWindow.hide()
+
+    def decrease_amount(self,event):
+        for i in self.cartlistmodel:
+                count=int(i[4])-int(i[7])
+                sellcount=int(i[7])+int(i[9])
+                id=int(i[0])
+                self.cursor.execute("UPDATE medicines SET PIECE=? , SELLCOUNT=? WHERE ID=?",(count,sellcount,id))
+                self.con.commit()
+        
+        self.ilac_listmodel.clear()
+        self.cartlistmodel.clear()
+        self.geciciliste.clear()
+        self.ilac_vericekme_query()
+
+        for i in range(len(self.ilac_listesi)):
+            self.ilac_listmodel.append(self.ilac_listesi[i]) 
+                
+        
 
     ### Tablolar ###
     listmodel = Gtk.ListStore(str, str, str,str,str)
@@ -606,7 +632,7 @@ class MyWindow(Gtk.Window):
         self.scroll_patientTable.add(self.view)
         self.scroll_patientTable.show_all()
 
-    ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str)
+    ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
 
     def ilac_tablo(self):
 
@@ -632,7 +658,7 @@ class MyWindow(Gtk.Window):
         self.scroll_medicineTable.add(self.ilac_view)
         self.scroll_medicineTable.show_all()
 
-    facilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str)
+    facilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
 
     def facilac_tablo(self):
 
@@ -679,7 +705,7 @@ class MyWindow(Gtk.Window):
         self.scroll_factoriesTable.add(self.fabrika_view)
         self.scroll_factoriesTable.show_all()
 
-    cartlistmodel = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
+    cartlistmodel = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str,str)
     def cart_tablo(self):
         
         #for i in range(len(self.ilac_listesi)):
@@ -702,7 +728,7 @@ class MyWindow(Gtk.Window):
         self.scroll_cartTable.add(self.cart_view)
         self.cart_view.show_all()
 
-    cartlistmodel2 = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
+    cartlistmodel2 = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str,str)
     def cart_tablo2(self):
         
         #for i in range(len(self.ilac_listesi)):
@@ -777,19 +803,25 @@ class MyWindow(Gtk.Window):
     def cartUpdate(self,event):
         self.geciciliste.append(self.Dragliste[0])
         a=self.Dragliste[7]
+        b=self.Dragliste[8]
+        self.Dragliste.pop()
         self.Dragliste.pop()
         self.ddKutuSayisi.hide()
         self.Dragliste.append(self.ddKutuSayisi_sayi.get_text())
         self.Dragliste.append(a)
+        self.Dragliste.append(b)
         self.cartlistmodel.append(self.Dragliste)
     
     def cartUpdate2(self,event):
         self.geciciliste2.append(self.Dragliste[0])
         a=self.Dragliste[7]
+        b=self.Dragliste[8]
+        self.Dragliste.pop()
         self.Dragliste.pop()
         self.ddKutuSayisi2.hide()
         self.Dragliste.append(self.ddKutuSayisi_sayi2.get_text())
         self.Dragliste.append(a)
+        self.Dragliste.append(b)
         self.cartlistmodel2.append(self.Dragliste)
         
             
