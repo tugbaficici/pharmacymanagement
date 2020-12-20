@@ -11,6 +11,7 @@ hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
 ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY"]
 cart_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY","COUNT"]
 fabrika_columns = ["ID","NAME"]
+ts_columns = ["NAME","ACTIVE","COUNT"]
 
 TARGETS = [('MY_TREE_MODEL_ROW', Gtk.TargetFlags(2) , 0),
 ('text/plain', 0, 1),
@@ -246,6 +247,13 @@ class MyWindow(Gtk.Window):
         self.ilac_listPage.add(self.ilac_listTable)
         self.ilac_notebook.append_page(self.ilac_listPage, Gtk.Label(label="List"))
 
+        self.ts_listWindow()
+        self.ts_listPage = Gtk.Box()
+        self.ts_listPage.set_border_width(10)
+        self.ts_listPage.set_homogeneous(True)
+        self.ts_listPage.add(self.ts_listTable)
+        self.ilac_notebook.append_page(self.ts_listPage, Gtk.Label(label="Disease Follow"))
+        
         self.ilac_addTable.show_all()
     
     def ilac_listWindow(self):
@@ -253,6 +261,12 @@ class MyWindow(Gtk.Window):
         self.ilac_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
         self.ilac_listTable.attach(self.scroll_medicineTable,0,10,0,10)
         self.ilac_listTable.show_all()
+
+    def ts_listWindow(self):
+        self.ts_tablo()
+        self.ts_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+        self.ts_listTable.attach(self.scroll_tsTable,0,10,0,10)
+        self.ts_listTable.show_all()
     
     def ilac_addWindow(self):
         self.ilac_addTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
@@ -265,7 +279,6 @@ class MyWindow(Gtk.Window):
         self.ilac_factoryEntry = Gtk.Entry()
         self.ilac_prosEntry = Gtk.Entry()
         
-
         ilac_nameLabel = Gtk.Label(label = "Name :")
         ilac_doseLabel = Gtk.Label(label = "Dose :")
         ilac_activeLabel = Gtk.Label(label = "Active :")
@@ -274,7 +287,6 @@ class MyWindow(Gtk.Window):
         ilac_factoryLabel = Gtk.Label(label = "Factory :")
         ilac_prosLabel = Gtk.Label(label = "Prospectus :")
         
-
         self.ilac_addButton = Gtk.Button(label = "Add") 
         self.ilac_addButton.connect('clicked',self.ilac_addButtonEvent)    
         
@@ -376,23 +388,17 @@ class MyWindow(Gtk.Window):
         self.cartGuncelleWindow = Gtk.Window()
         self.cartGuncelleWindow.set_title("Box")
         self.cartGuncelleWindow.set_border_width(10)
-
         self.cartGuncelleWindowTable = Gtk.Table(n_rows=2, n_columns=0, homogeneous=True)
         self.cartGuncelleWindow.add(self.cartGuncelleWindowTable)
-
         self.cartGuncelleSayi = Gtk.Entry()
             
-
         self.cartGuncelleButton = Gtk.Button(label ="Send")
         self.cartGuncelleButton.connect('clicked',self.onclick_Update)
-    
         self.cartGuncelleSayi.set_placeholder_text("Piece")
         
-
         self.cartGuncelleWindowTable.attach(self.cartGuncelleSayi,0,1,0,1)
         self.cartGuncelleWindowTable.attach(self.cartGuncelleButton,0,1,1,2)
         
-
         self.cartGuncelleWindow.present()
         self.cartGuncelleWindow.show_all()
     
@@ -405,18 +411,13 @@ class MyWindow(Gtk.Window):
         self.cartGuncelleWindow2.add(self.cartGuncelleWindowTable2)
 
         self.cartGuncelleSayi2 = Gtk.Entry()
-            
-
         self.cartGuncelleButton2 = Gtk.Button(label ="Send")
         self.cartGuncelleButton2.connect('clicked',self.onclick_Update)
     
         self.cartGuncelleSayi2.set_placeholder_text("Piece")
-        
-
         self.cartGuncelleWindowTable2.attach(self.cartGuncelleSayi2,0,1,0,1)
         self.cartGuncelleWindowTable2.attach(self.cartGuncelleButton2,0,1,1,2)
         
-
         self.cartGuncelleWindow2.present()
         self.cartGuncelleWindow2.show_all()
 
@@ -562,8 +563,6 @@ class MyWindow(Gtk.Window):
         proceedSurnameLabel = Gtk.Label(label = self.proceedPatSurname)
         proceedMailLabel = Gtk.Label(label = self.proceedPatMail)
 
-        
-
         self.cart_tablo()
         proceedTable.attach(proceedLabel,4,6,0,1)
         proceedTable.attach(proceedMedicineLabel,0,5,1,2)
@@ -571,7 +570,6 @@ class MyWindow(Gtk.Window):
         proceedTable.attach(proceedTotal,0,2,8,10)
         proceedTable.attach(proceedAmount,2,4,8,10)
         
-
         proceedTable.attach(proceedTC,5,8,2,3)
         proceedTable.attach(proceedName,5,8,3,4)
         proceedTable.attach(proceedSurname,5,8,4,5)
@@ -610,8 +608,6 @@ class MyWindow(Gtk.Window):
         self.con.commit() 
         
         proceedName = Gtk.Label(label = "Factory Name : ")
-        
-
         proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
         
         #prospektüs string oluşturulcak
@@ -623,12 +619,7 @@ class MyWindow(Gtk.Window):
         self.proceedExit2 = Gtk.Button(label = "Exit")
         self.proceedExit2.connect('clicked',self.proceedex2)
         
-        
         proceedNameLabel = Gtk.Label(label = self.proceedPatFactory)
-       
-
-        
-
         self.cart_tablo2()
         proceedTable.attach(proceedLabel,4,6,0,1)
         proceedTable.attach(proceedMedicineLabel,0,5,1,2)
@@ -646,7 +637,6 @@ class MyWindow(Gtk.Window):
 
         self.proceedWindow2.present()
         self.proceedWindow2.show_all()
-    
     
     def proceedex(self,event):
         self.proceedWindow.hide()
@@ -685,9 +675,24 @@ class MyWindow(Gtk.Window):
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i]) 
                 
-        
-
     ### Tablolar ###
+    ts_listmodel = Gtk.ListStore(str, str, str)
+    def ts_tablo(self):
+        self.ts_vericekme_query()
+        self.ts_listmodel.clear()
+        for i in range(len(self.ts_listesi)):
+            self.ts_listmodel.append(self.ts_listesi[i])
+        
+        self.ts_view = Gtk.TreeView(model=self.ts_listmodel)
+        for i, column in enumerate(ts_columns):
+            cell = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            self.ts_view.append_column(col)
+
+        self.scroll_tsTable = Gtk.ScrolledWindow()
+        self.scroll_tsTable.add(self.ts_view)
+        self.scroll_tsTable.show_all()
+
     listmodel = Gtk.ListStore(str, str, str,str,str)
     def hasta_tablo(self):
    
@@ -730,7 +735,6 @@ class MyWindow(Gtk.Window):
         self.ilac_view.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
         self.ilac_view.connect("drag-data-get", self.on_drag_data_get)
 
-        
         self.scroll_medicineTable = Gtk.ScrolledWindow()
         self.scroll_medicineTable.add(self.ilac_view)
         self.scroll_medicineTable.show_all()
@@ -903,8 +907,6 @@ class MyWindow(Gtk.Window):
         self.Dragliste.append(b)
         self.cartlistmodel2.append(self.Dragliste)
         
-            
-        
     #### Veri Tabanı Fonksiyonları ####
 
     def baglanti_baslat(self):
@@ -970,6 +972,17 @@ class MyWindow(Gtk.Window):
                 gecici_liste.append(str(j))
             
             self.hasta_listesi.append(gecici_liste)
+    
+    def ts_vericekme_query(self):
+        self.cursor.execute("SELECT NAME,ACTIVE,SELLCOUNT FROM medicines ORDER BY SELLCOUNT DESC")
+        ts_list = self.cursor.fetchall()
+        self.ts_listesi = list()
+        for i in list(ts_list):
+            gecici_liste = list()
+            for j in i:
+                gecici_liste.append(str(j))
+            
+            self.ts_listesi.append(gecici_liste)
 
     def ilac_vericekme_query(self):
         self.cursor.execute("SELECT * FROM medicines")
