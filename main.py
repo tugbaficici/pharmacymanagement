@@ -691,6 +691,7 @@ class MyWindow(Gtk.Window):
         self.ilac_listmodel.clear()
         self.facilac_listmodel.clear()
         self.cartlistmodel2.clear()
+        self.controlfactory=""
         self.geciciliste2.clear()
         self.ilac_vericekme_query()
         self.facilac_vericekme_query(None)
@@ -921,17 +922,26 @@ class MyWindow(Gtk.Window):
         self.Dragliste.append(b)
         self.cartlistmodel.append(self.Dragliste)
     
+    controlfactory=""
+    
     def cartUpdate2(self,event):
-        self.geciciliste2.append(self.Dragliste[0])
-        a=self.Dragliste[7]
-        b=self.Dragliste[8]
-        self.Dragliste.pop()
-        self.Dragliste.pop()
-        self.ddKutuSayisi2.hide()
-        self.Dragliste.append(self.ddKutuSayisi_sayi2.get_text())
-        self.Dragliste.append(a)
-        self.Dragliste.append(b)
-        self.cartlistmodel2.append(self.Dragliste)
+        #
+        # error ekle tek factory olabilir.
+        #
+        if((self.controlfactory== self.Dragliste[6]) or (self.controlfactory=="")):
+            self.controlfactory=self.Dragliste[6]
+            self.geciciliste2.append(self.Dragliste[0])
+            a=self.Dragliste[7]
+            b=self.Dragliste[8]
+            self.Dragliste.pop()
+            self.Dragliste.pop()
+            self.ddKutuSayisi2.hide()
+            self.Dragliste.append(self.ddKutuSayisi_sayi2.get_text())
+            self.Dragliste.append(a)
+            self.Dragliste.append(b)
+            self.cartlistmodel2.append(self.Dragliste)
+        else:
+            self.errorWin("Please select same factory !")
         
     #### Veri Tabanı Fonksiyonları ####
 
@@ -1354,6 +1364,7 @@ class MyWindow(Gtk.Window):
             self.geciciliste.clear()
         if(carttip==2):
             self.cartlistmodel2.clear()
+            self.controlfactory=""
             self.geciciliste2.clear()
 
     def create_invoice(self):
