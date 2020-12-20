@@ -207,6 +207,7 @@ class MyWindow(Gtk.Window):
         alis_medicineSearch.connect("activate",self.medicines_searchBar2)
 
         self.alis_checkoutButton = Gtk.Button(label = "Checkout to Proceed")
+        self.alis_checkoutButton.connect('clicked',self.proceedScreen2)
 
         self.fabrika_tablo()
         self.alis_Table.attach(alis_factoriesLabel,0,3,0,1)
@@ -587,6 +588,64 @@ class MyWindow(Gtk.Window):
 
         self.proceedWindow.present()
         self.proceedWindow.show_all()
+
+    def proceedScreen2(self,event):
+        self.proceedWindow2 = Gtk.Window()
+        self.proceedWindow2.set_title("Proceed to "+self.proceedPatFactory)
+        self.proceedWindow2.set_border_width(10)
+
+        proceedTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        self.proceedWindow2.add(proceedTable)
+
+        proceedLabel = Gtk.Label(label= "Proceed to "+self.proceedPatFactory)
+        proceedMedicineLabel = Gtk.Label(label = "Medicines")
+        proceedTotal = Gtk.Label(label = "Total Amount of Proceed : ")
+        amount=0
+        medicines=""
+        for i in self.cartlistmodel2:
+                amount+=float(i[5])*int(i[7])
+                medicines+=i[1]+"("+i[7]+"),"
+        proceedAmount = Gtk.Label(label = str(amount)+" ₺" )
+        self.cursor.execute("INSERT INTO factorybills(FACTORYNAME,MEDICINES,AMOUNT) Values(?,?,?)",(self.proceedPatFactory,medicines,amount))
+        self.con.commit() 
+        
+        proceedName = Gtk.Label(label = "Factory Name : ")
+        
+
+        proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
+        
+        #prospektüs string oluşturulcak
+
+        self.proceedButton2 = Gtk.Button(label = "Send")
+        #self.proceedButton2.connect('clicked',send_mail,self.proceedPatMail,"deneme")
+        self.proceedButton2.connect('clicked',self.decrease_amount2)
+        self.proceedButton2.connect('clicked',self.proceedex2)
+        self.proceedExit2 = Gtk.Button(label = "Exit")
+        self.proceedExit2.connect('clicked',self.proceedex2)
+        
+        
+        proceedNameLabel = Gtk.Label(label = self.proceedPatFactory)
+       
+
+        
+
+        self.cart_tablo2()
+        proceedTable.attach(proceedLabel,4,6,0,1)
+        proceedTable.attach(proceedMedicineLabel,0,5,1,2)
+        proceedTable.attach(self.scroll_cartTable2,0,5,2,8)
+        proceedTable.attach(proceedTotal,0,2,8,10)
+        proceedTable.attach(proceedAmount,2,4,8,10)
+        
+        proceedTable.attach(proceedName,5,8,3,4)
+        proceedTable.attach(proceedNameLabel,8,10,3,4)
+        
+
+        proceedTable.attach(proceedAttention,5,10,7,8)
+        proceedTable.attach(self.proceedButton2,5,8,8,10)
+        proceedTable.attach(self.proceedExit2,8,10,8,10)
+
+        self.proceedWindow2.present()
+        self.proceedWindow2.show_all()
     
     
     def proceedex(self,event):
@@ -603,6 +662,24 @@ class MyWindow(Gtk.Window):
         self.ilac_listmodel.clear()
         self.cartlistmodel.clear()
         self.geciciliste.clear()
+        self.ilac_vericekme_query()
+
+        for i in range(len(self.ilac_listesi)):
+            self.ilac_listmodel.append(self.ilac_listesi[i]) 
+
+    def proceedex2(self,event):
+        self.proceedWindow2.hide()
+
+    def decrease_amount2(self,event):
+        for i in self.cartlistmodel2:
+                count=int(i[4])-int(i[7])
+                id=int(i[0])
+                #self.cursor.execute("UPDATE medicines SET PIECE=? WHERE ID=?",(count,id))#hangi veritabanı??
+                #self.con.commit()
+        
+        self.ilac_listmodel.clear()
+        self.cartlistmodel2.clear()
+        self.geciciliste2.clear()
         self.ilac_vericekme_query()
 
         for i in range(len(self.ilac_listesi)):
@@ -699,6 +776,8 @@ class MyWindow(Gtk.Window):
             self.fabrika_view.append_column(col)
         
         self.fabrika_view.connect('button-press-event' , self.tablo_rightClickFac,'factories')
+        self.fabrika_view.connect('button-press-event' , self.tablo_leftClickFac,'factories')
+        
         self.fabrika_view.show_all()
 
         self.scroll_factoriesTable = Gtk.ScrolledWindow()
@@ -986,7 +1065,21 @@ class MyWindow(Gtk.Window):
             self.proceedPatName = model[iter][2]
             self.proceedPatSurname = model[iter][3]
             self.proceedPatMail = model[iter][4]
- 
+
+    def tablo_leftClickFac(self,treeview,event,tablename):
+        self.table_typeLeft = tablename
+        if self.table_typeLeft == 'factories':
+            pthinfo = treeview.get_path_at_pos(event.x, event.y)
+            if pthinfo != None:
+                path,col,cellx,celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor(path,col,0)
+            selection = treeview.get_selection()
+            (model, iter) = selection.get_selected()
+            
+            self.proceedPatFactory = model[iter][1]
+            
+            
     def tablo_rightClickFac(self,treeview, event,tablename):
         self.table_type = tablename
         
