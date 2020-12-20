@@ -8,6 +8,7 @@ from gi.repository import Gdk, GLib,Pango
 from mail import send_mail
 from datetime import date
 from reportlab.pdfgen import canvas
+from gi.repository.GdkPixbuf import Pixbuf
 
 hasta_columns = ["ID", "TC NO", "First Name", "Last Name", "EMAIL"]
 ilac_columns = ["ID", "NAME", "DOSE", "ACTIVE", "PIECE", "PRICE","FACTORY"]
@@ -157,6 +158,14 @@ class MyWindow(Gtk.Window):
         satis_cartCleanButton = Gtk.Button(label = "Clean")
         satis_cartCleanButton.connect('clicked',self.on_click_clean,1)
 
+        pb = Pixbuf.new_from_file_at_size('qr-code.png', 30, 30)
+        image = Gtk.Image()
+        image.set_from_pixbuf(pb)
+        satis_cartQRButton = Gtk.Button(label = "QR")
+        satis_cartQRButton.set_image(image)
+        satis_cartQRButton.set_image_position(Gtk.PositionType.TOP)
+        satis_cartQRButton.set_always_show_image (True)
+
         self.ilac_tablo()
         satis_medicineSearch = Gtk.SearchEntry()
         satis_medicineSearch.connect("activate",self.medicines_searchBar)
@@ -171,8 +180,9 @@ class MyWindow(Gtk.Window):
         self.satis_Table.attach(satis_patienceAddButton,2,3,1,2)
         self.satis_Table.attach(self.scroll_patientTable,0,3,2,5)
 
-        self.satis_Table.attach(satis_cartLabel,0,2,5,6)
-        self.satis_Table.attach(satis_cartCleanButton,2,3,5,6)
+        self.satis_Table.attach(satis_cartLabel,0,1,5,6)
+        self.satis_Table.attach(satis_cartCleanButton,1,2,5,6)
+        self.satis_Table.attach(satis_cartQRButton,2,3,5,6)
         self.satis_Table.attach(self.scroll_cartTable,0,3,6,9)
     
         self.satis_Table.attach(satis_medicineLabel,3,10,0,1)
