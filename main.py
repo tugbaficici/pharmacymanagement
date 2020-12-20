@@ -674,19 +674,32 @@ class MyWindow(Gtk.Window):
         self.proceedWindow2.hide()
 
     def decrease_amount2(self,event):
-        for i in self.cartlistmodel2:
-                count=int(i[4])-int(i[7])
-                id=int(i[0])
-                #self.cursor.execute("UPDATE medicines SET PIECE=? WHERE ID=?",(count,id))#hangi veritabanı??
-                #self.con.commit()
         
+        for i in self.cartlistmodel2:
+                factorycount=int(i[4])-int(i[7])
+                count=int(i[7])
+                id=int(i[0])
+                self.cursor.execute("UPDATE factorystock SET PIECE=? WHERE ID=?",(factorycount,id))
+                self.con.commit()
+                for j in self.ilac_listmodel:
+                    if (id==int(j[0])):
+                        pharmacycount=int(j[4])+count
+                        self.cursor.execute("UPDATE medicines SET PIECE=? WHERE ID=?",(pharmacycount,id))
+                        self.con.commit()
+
+
         self.ilac_listmodel.clear()
+        self.facilac_listmodel.clear()
         self.cartlistmodel2.clear()
         self.geciciliste2.clear()
         self.ilac_vericekme_query()
+        self.facilac_vericekme_query(None)
 
         for i in range(len(self.ilac_listesi)):
-            self.ilac_listmodel.append(self.ilac_listesi[i]) 
+            self.ilac_listmodel.append(self.ilac_listesi[i])
+
+        for i in range(len(self.facilac_listesi)):
+            self.facilac_listmodel.append(self.facilac_listesi[i])  
                 
     ### Tablolar ###
     ts_listmodel = Gtk.ListStore(str, str, str)
@@ -1010,9 +1023,9 @@ class MyWindow(Gtk.Window):
 
     def facilac_vericekme_query(self,facname):
         if(facname==None):
-            self.cursor.execute("SELECT * FROM medicines")
+            self.cursor.execute("SELECT * FROM factorystock")
         else:
-            self.cursor.execute("SELECT * FROM medicines WHERE FACTORY=?",(facname,))
+            self.cursor.execute("SELECT * FROM factorystock WHERE FACTORY=?",(facname,))
         facilac_list = self.cursor.fetchall()
         self.facilac_listesi = list()
         for i in list(facilac_list):
