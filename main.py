@@ -6,6 +6,7 @@ from gi.repository import Gtk
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk, GLib,Pango
 from mail import send_mail
+from qr import QRdanEkle
 from datetime import date
 from reportlab.pdfgen import canvas
 from gi.repository.GdkPixbuf import Pixbuf
@@ -165,6 +166,7 @@ class MyWindow(Gtk.Window):
         satis_cartQRButton.set_image(image)
         satis_cartQRButton.set_image_position(Gtk.PositionType.TOP)
         satis_cartQRButton.set_always_show_image (True)
+        satis_cartQRButton.connect('clicked',self.QRkodcekme)
 
         self.ilac_tablo()
         satis_medicineSearch = Gtk.SearchEntry()
@@ -1467,6 +1469,32 @@ class MyWindow(Gtk.Window):
         c.showPage()
         # Saving the PDF
         c.save()
+    
+    def QRkodcekme(self,event):
+        #yakalanan="5 Parol 500 Parasetamol"
+        yakalanan=QRdanEkle()
+        x=yakalanan.split()
+        self.Dragliste=list()
+        for i in self.ilac_listmodel:
+            if(x[0]==i[0]):
+                for a in i:
+                    self.Dragliste.append(a)
+        if self.Dragliste[0] in self.geciciliste:
+            pass
+        else:
+            if(int(self.Dragliste[4])>=1):
+                self.geciciliste.append(self.Dragliste[0])
+                a=self.Dragliste[7]
+                b=self.Dragliste[8]
+                self.Dragliste.pop()
+                self.Dragliste.pop()
+                self.Dragliste.append("1")
+                self.Dragliste.append(a)
+                self.Dragliste.append(b)
+                self.cartlistmodel.append(self.Dragliste)
+            else:
+                self.errorWin("Out of stock !")
+
 
 
 window = MyWindow()

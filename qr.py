@@ -6,7 +6,7 @@ from pyzbar import pyzbar
 #pip3 install opencv-python
 #pip3 install Pillow
 
-yakalanan=""
+
 
 def read_barcodes(frame):
     barcodes = pyzbar.decode(frame)
@@ -20,15 +20,21 @@ def read_barcodes(frame):
         font = cv2.FONT_HERSHEY_DUPLEX
         cv2.putText(frame, barcode_info, (x + 6, y - 6), font, 2.0, (255, 255, 255), 1)
         #3
+        global yakalanan
         yakalanan=barcode_info
-        print(barcode_info)
+        if(yakalanan!= ""):
+            print(yakalanan)
+
+        #print(yakalanan)
     return frame
+
 
 def main():
     #1
+    
     camera = cv2.VideoCapture(0)
     ret, frame = camera.read()
-    #2
+
     while ret:
         ret, frame = camera.read()
         frame = read_barcodes(frame)
@@ -38,6 +44,9 @@ def main():
     #3
     camera.release()
     cv2.destroyAllWindows()
-#4
-if __name__ == '__main__':
+
+def QRdanEkle():
     main()
+    print("yakalanan:"+yakalanan)
+    return yakalanan
+
