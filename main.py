@@ -1471,8 +1471,12 @@ class MyWindow(Gtk.Window):
         c.save()
     
     def QRkodcekme(self,event):
+        ###
+        ### Kameradan çıkmak için ESCYE basılması gerekir.
+        ###
         #yakalanan="5 Parol 500 Parasetamol"
         yakalanan=QRdanEkle()
+        print(yakalanan)
         x=yakalanan.split()
         self.Dragliste=list()
         for i in self.ilac_listmodel:

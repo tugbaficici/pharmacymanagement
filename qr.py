@@ -1,5 +1,6 @@
 import cv2
 from pyzbar import pyzbar
+from pynput.keyboard import Key, Controller
 
 #installation
 #sudo apt-get install libzbar0
@@ -22,8 +23,11 @@ def read_barcodes(frame):
         #3
         global yakalanan
         yakalanan=barcode_info
+        #keyboard = Controller()
         if(yakalanan!= ""):
-            print(yakalanan)
+            #keyboard.press(Key.esc)
+            #keyboard.release(Key.esc)
+            
 
         #print(yakalanan)
     return frame
@@ -38,9 +42,12 @@ def main():
     while ret:
         ret, frame = camera.read()
         frame = read_barcodes(frame)
+        
         cv2.imshow('Barcode/QR code reader', frame)
+        
         if cv2.waitKey(1) & 0xFF == 27:
             break
+        
     #3
     camera.release()
     cv2.destroyAllWindows()
