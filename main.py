@@ -485,10 +485,15 @@ class MyWindow(Gtk.Window):
         self.ilac_listmodel.clear()
         self.cartlistmodel.clear()
         self.geciciliste.clear()
+        self.ts_listmodel.clear()
         ilac_vericekme_query(self)
+        ts_vericekme_query(self)
 
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i]) 
+
+        for i in range(len(self.ts_listesi)):
+            self.ts_listmodel.append(self.ts_listesi[i]) 
         
     # Fabrika fatura ekranı kapatma butonu fonksiyonu
     def proceedex2(self,event):
