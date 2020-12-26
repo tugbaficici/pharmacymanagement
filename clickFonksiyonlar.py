@@ -14,8 +14,6 @@ def tablo_rightClick(treeview, event,tablename,self):
             selection = treeview.get_selection()
             (model, iter) = selection.get_selected()
             self.secilen_Satir=model[iter][0] # seçilen satırı id si
-            print(self.secilen_Satir)
-            print(treeview.get_model())
 
             menu = context_menu(self)
             menu.popup( None, None, None,None, event.button, event.get_time())
@@ -64,8 +62,6 @@ def tablo_rightClickFac(treeview, event,tablename,self):
         selection = treeview.get_selection()
         (model, iter) = selection.get_selected()
         self.secilen_Satir=model[iter][0] # seçilen satırı id si
-        print(self.secilen_Satir)
-        print(model[iter][1])
 
         self.facilac_listmodel.clear()
         facilac_vericekme_query(self,model[iter][1])

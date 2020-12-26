@@ -45,6 +45,5 @@ def main(self):
 def QRdanEkle(self):
     self.yakalanan = ''
     main(self)
-    print("yakalanan:"+self.yakalanan)
     return self.yakalanan
 
