@@ -5,12 +5,13 @@ from email.mime.base import MIMEBase
 from email import encoders
 import sys
 
+# Mail gönderme fonksiyonu
 def send_mail(even,self,to,bodytext,pdfname):
     try:
         mail = smtplib.SMTP("smtp.gmail.com",587)
         mail.ehlo()
         mail.starttls()
-        mail.login("opensourcepms@gmail.com", "sifre")
+        mail.login("opensourcepms@gmail.com", "123123123Aa*")
 
         mesaj = MIMEMultipart()
         mesaj["From"] = "opensourcepms@gmail.com" 

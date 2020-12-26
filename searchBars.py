@@ -1,5 +1,6 @@
 from veriCekmeFonksiyonlar import *
 
+# Hasta arama barı
 def patients_searchBar(searchentry,self):
         search_text = searchentry.get_text()
 
@@ -15,7 +16,8 @@ def patients_searchBar(searchentry,self):
         for j in range(len(tc_Number)):
             if search_text in str(tc_Number[j]):
                 self.listmodel.append(self.hasta_listesi[j])
-    
+
+# İlaç arama barı 
 def medicines_searchBar(searchentry,self):
         search_text = searchentry.get_text()
         self.cursor.execute("SELECT NAME FROM medicines")
@@ -25,9 +27,10 @@ def medicines_searchBar(searchentry,self):
         ilac_vericekme_query(self)
 
         for j in range(len(list_MedicineNames)):
-            if search_text in str(list_MedicineNames[j]):
+            if search_text in str(list_MedicineNames[j]).lower():
                 self.ilac_listmodel.append(self.ilac_listesi[j])
-    
+
+# Fabrika ilaç arama barı    
 def medicines_searchBar2(searchentry,self):
         search_text = searchentry.get_text()
         self.cursor.execute("SELECT NAME FROM medicines")
@@ -37,9 +40,10 @@ def medicines_searchBar2(searchentry,self):
         facilac_vericekme_query(self,None)
 
         for j in range(len(list_MedicineNames)):
-            if search_text in str(list_MedicineNames[j]):
+            if search_text in str(list_MedicineNames[j]).lower():
                 self.facilac_listmodel.append(self.facilac_listesi[j])
-    
+
+# Fabrika arama barı
 def factory_SearchBar(searchentry,self):
         search_text = searchentry.get_text()
         self.cursor.execute("SELECT NAME FROM factories")

@@ -47,6 +47,36 @@ class MyWindow(Gtk.Window):
 
     #### Ekranlar #####
 
+    # Giriş ekranı 
+    def giris_ekrani(self):
+
+        self.main_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
+        main_Label = Gtk.Label(label = "Open Source Pharmacy Management Sysem")
+
+        main_IdLabel = Gtk.Label(label = "ID : ")
+        self.main_IdEntry = Gtk.Entry()
+
+        main_PassLabel = Gtk.Label(label = "Password : ")
+        self.main_PassEntry = Gtk.Entry()
+        self.main_PassEntry.set_visibility(False)
+
+        self.main_LoginButton = Gtk.Button(label = "Login")
+        self.main_LoginButton.connect('clicked',kullanici_giris,self)
+        self.main_RegisterButton = Gtk.Button(label = "Register")
+        self.main_RegisterButton.connect('clicked',kullanici_kayit,self)
+
+        self.main_Table.attach(main_Label,0,10,0,2)
+        self.main_Table.attach(main_IdLabel,0,4,3,4)
+        self.main_Table.attach(main_PassLabel,0,4,4,5)
+        self.main_Table.attach(self.main_IdEntry,5,8,3,4)
+        self.main_Table.attach(self.main_PassEntry,5,8,4,5)
+        self.main_Table.attach(self.main_LoginButton,4,6,6,7)
+        self.main_Table.attach(self.main_RegisterButton,4,6,7,8)
+
+        self.add(self.main_Table)
+        self.show_all()
+    
+    # Ana ekran 
     def ana_ekran(self):
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
@@ -89,34 +119,7 @@ class MyWindow(Gtk.Window):
     
         self.notebook.show_all()
 
-    def giris_ekrani(self):
-
-        self.main_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
-        main_Label = Gtk.Label(label = "Open Source Pharmacy Management Sysem")
-
-        main_IdLabel = Gtk.Label(label = "ID : ")
-        self.main_IdEntry = Gtk.Entry()
-
-        main_PassLabel = Gtk.Label(label = "Password : ")
-        self.main_PassEntry = Gtk.Entry()
-        self.main_PassEntry.set_visibility(False)
-
-        self.main_LoginButton = Gtk.Button(label = "Login")
-        self.main_LoginButton.connect('clicked',kullanici_giris,self)
-        self.main_RegisterButton = Gtk.Button(label = "Register")
-        self.main_RegisterButton.connect('clicked',kullanici_kayit,self)
-
-        self.main_Table.attach(main_Label,0,10,0,2)
-        self.main_Table.attach(main_IdLabel,0,4,3,4)
-        self.main_Table.attach(main_PassLabel,0,4,4,5)
-        self.main_Table.attach(self.main_IdEntry,5,8,3,4)
-        self.main_Table.attach(self.main_PassEntry,5,8,4,5)
-        self.main_Table.attach(self.main_LoginButton,4,6,6,7)
-        self.main_Table.attach(self.main_RegisterButton,4,6,7,8)
-
-        self.add(self.main_Table)
-        self.show_all()
-
+    # Ayarlar ekranı 
     def settings_ekrani(self):
 
         self.setting_table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
@@ -126,6 +129,7 @@ class MyWindow(Gtk.Window):
         self.setting_table.attach(main_Label,0,10,0,2)
         self.setting_table.attach(self.setting_LogoutButton,0,10,2,3)
 
+    # Kayıt ekranı 
     def kayit_ekrani(self):
 
         self.kayit_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=True)
@@ -151,6 +155,7 @@ class MyWindow(Gtk.Window):
         self.add(self.kayit_Table)
         self.show_all()
 
+    # Satış ekranı 
     def satis_ekrani(self):
         
         self.hasta_tablo()
@@ -205,6 +210,7 @@ class MyWindow(Gtk.Window):
         self.view.show_all()
         self.satis_Table.show_all()
     
+    # Alış ekranı 
     def alis_ekrani(self):
         self.alis_Table = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
 
@@ -246,6 +252,7 @@ class MyWindow(Gtk.Window):
         self.fabrika_view.show_all()
         self.alis_Table.show_all()
     
+    # İlaç ekranı 
     def ilac_ekrani(self):
         self.ilac_notebook = Gtk.Notebook()
 
@@ -272,24 +279,21 @@ class MyWindow(Gtk.Window):
         
         self.ilac_addTable.show_all()
     
+    # İlaç listeleme ekranı
     def ilac_listWindow(self):
         self.ilac_tablo()
         self.ilac_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
         self.ilac_listTable.attach(self.scroll_medicineTable,0,10,0,10)
         self.ilac_listTable.show_all()
 
+    # Hastalık takibi ekranı
     def ts_listWindow(self):
         self.ts_tablo()
         self.ts_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
         self.ts_listTable.attach(self.scroll_tsTable,0,10,0,10)
         self.ts_listTable.show_all()
-    
-    def hasta_listWindow(self):
-        self.hasta_tablo()
-        self.hasta_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
-        self.hasta_listTable.attach(self.scroll_patientTable,0,10,0,10)
-        self.hasta_listTable.show_all()
 
+    # İlaç ekleme ekranı
     def ilac_addWindow(self):
         self.ilac_addTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
 
@@ -334,14 +338,21 @@ class MyWindow(Gtk.Window):
 
         self.ilac_addTable.attach(ilac_priceLabel,1,2,7,8)
         self.ilac_addTable.attach(self.ilac_priceEntry,3,5,7,8)
-
         
         self.ilac_addTable.attach(self.ilac_addButton,8,10,7,8)
 
         self.ilac_addTable.show_all()
+    
+    # Hasta listeleme ekranı
+    def hasta_listWindow(self):
+        self.hasta_tablo()
+        self.hasta_listTable = Gtk.Table(n_rows=10, n_columns=10, homogeneous=False)
+        self.hasta_listTable.attach(self.scroll_patientTable,0,10,0,10)
+        self.hasta_listTable.show_all()
+
     ### Yan Ekranlar ###
     
-    
+    # Fatura ekranı
     def proceedScreen(self,event):
         try:
             self.proceedWindow = Gtk.Window()
@@ -372,7 +383,6 @@ class MyWindow(Gtk.Window):
             #prospektüs string oluşturulcak
             pdfname=self.proceedPatTC+"-"+str(datetime.datetime.now())
             create_invoice(self,pdfname)
-
 
             self.proceedButton = Gtk.Button(label = "Send")
             self.proceedButton.connect('clicked',send_mail,self,self.proceedPatMail,prospektuslinks,pdfname)
@@ -413,9 +423,7 @@ class MyWindow(Gtk.Window):
         except AttributeError:
             errorWin(self,"Please select a patient !")
             
-
-    
-
+    # Fabrika fatura ekranı
     def proceedScreen2(self,event):
         self.proceedWindow2 = Gtk.Window()
         self.proceedWindow2.set_title("Proceed to "+self.proceedPatFactory)
@@ -437,13 +445,9 @@ class MyWindow(Gtk.Window):
         self.con.commit() 
         
         proceedName = Gtk.Label(label = "Factory Name : ")
-        proceedAttention = Gtk.Label(label = "The prospectus will be sent to your e-mail. Healthy Days !")
-        
-        #prospektüs string oluşturulcak
-
+        proceedAttention = Gtk.Label(label = "Healthy Days !")
 
         self.proceedButton2 = Gtk.Button(label = "Send")
-        #self.proceedButton2.connect('clicked',send_mail,self.proceedPatMail,"deneme")
         self.proceedButton2.connect('clicked',self.decrease_amount2)
         self.proceedButton2.connect('clicked',self.proceedex2)
         self.proceedExit2 = Gtk.Button(label = "Exit")
@@ -465,9 +469,11 @@ class MyWindow(Gtk.Window):
         self.proceedWindow2.present()
         self.proceedWindow2.show_all()
     
+    # Fatura ekranı kapatma butonu görevi
     def proceedex(self,event):
         self.proceedWindow.hide()
 
+    # Stoktan ilaç düşme işlemini gerçekleştiren fonksiyon
     def decrease_amount(self,event):
         for i in self.cartlistmodel:
                 count=int(i[4])-int(i[7])
@@ -475,9 +481,6 @@ class MyWindow(Gtk.Window):
                 id=int(i[0])
                 self.cursor.execute("UPDATE medicines SET PIECE=? , SELLCOUNT=? WHERE ID=?",(count,sellcount,id))
                 self.con.commit()
-        
-        
-        #self.proceedButton2.connect('clicked',send_mail,self.proceedPatMail,"deneme")
         
         self.ilac_listmodel.clear()
         self.cartlistmodel.clear()
@@ -487,12 +490,11 @@ class MyWindow(Gtk.Window):
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i]) 
         
-        
-        
-
+    # Fabrika fatura ekranı kapatma butonu fonksiyonu
     def proceedex2(self,event):
         self.proceedWindow2.hide()
 
+    # Fabrika stoğundan ilaç düşme işlemini gerçekleştiren fonksiyon
     def decrease_amount2(self,event):
         
         for i in self.cartlistmodel2:
@@ -522,6 +524,8 @@ class MyWindow(Gtk.Window):
             self.facilac_listmodel.append(self.facilac_listesi[i])  
                 
     ### Tablolar ###
+
+    # Hastalık takibi tablosu
     ts_listmodel = Gtk.ListStore(str, str, str)
     def ts_tablo(self):
         ts_vericekme_query(self)
@@ -539,6 +543,7 @@ class MyWindow(Gtk.Window):
         self.scroll_tsTable.add(self.ts_view)
         self.scroll_tsTable.show_all()
 
+    # Hasta tablosu
     listmodel = Gtk.ListStore(str, str, str,str,str)
     def hasta_tablo(self):
    
@@ -560,8 +565,8 @@ class MyWindow(Gtk.Window):
         self.scroll_patientTable.add(self.view)
         self.scroll_patientTable.show_all()
 
+    # İlaç tablosu
     ilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
-
     def ilac_tablo(self):
 
         ilac_vericekme_query(self)
@@ -585,8 +590,8 @@ class MyWindow(Gtk.Window):
         self.scroll_medicineTable.add(self.ilac_view)
         self.scroll_medicineTable.show_all()
 
+    # Fabrika ilaç tablosu
     facilac_listmodel=Gtk.ListStore(str, str, str ,str ,str, str,str,str,str)
-
     def facilac_tablo(self):
 
         facilac_vericekme_query(self,None)
@@ -605,14 +610,12 @@ class MyWindow(Gtk.Window):
 
         self.facilac_view.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK, TARGETS, DRAG_ACTION)
         self.facilac_view.connect("drag-data-get", self.on_drag_data_get)
-
-        
         self.scroll_fmedicineTable = Gtk.ScrolledWindow()
         self.scroll_fmedicineTable.add(self.facilac_view)
         self.scroll_fmedicineTable.show_all()    
 
+    # Fabrika tablosu
     factories_listmodel = Gtk.ListStore(str, str)
-    
     def fabrika_tablo(self):
         fabrika_vericekme_query(self)
         self.factories_listmodel.clear()
@@ -634,11 +637,9 @@ class MyWindow(Gtk.Window):
         self.scroll_factoriesTable.add(self.fabrika_view)
         self.scroll_factoriesTable.show_all()
 
+    # Sepet tablosu
     cartlistmodel = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str,str)
     def cart_tablo(self):
-        
-        #for i in range(len(self.ilac_listesi)):
-        #    listmodel.append(self.ilac_listesi[i])
 
         self.cart_view = Gtk.TreeView(model=self.cartlistmodel)
         for i, column in enumerate(cart_columns):
@@ -657,11 +658,9 @@ class MyWindow(Gtk.Window):
         self.scroll_cartTable.add(self.cart_view)
         self.cart_view.show_all()
 
+    # Fabrika sepet tablosu
     cartlistmodel2 = Gtk.ListStore(str, str, str ,str ,str, str,str,str,str,str)
     def cart_tablo2(self):
-        
-        #for i in range(len(self.ilac_listesi)):
-        #    listmodel.append(self.ilac_listesi[i])
 
         self.cart_view2 = Gtk.TreeView(model=self.cartlistmodel2)
         for i, column in enumerate(cart_columns):
@@ -679,9 +678,9 @@ class MyWindow(Gtk.Window):
         self.scroll_cartTable2.add(self.cart_view2)
         self.cart_view2.show_all()
 
-    ###DRAG AND DROP
+    ###Drag and Drop
 
-
+    # Seçilen ilacın alınması
     def on_drag_data_get(self, widget, drag_context, data, info, time):
         select = widget.get_selection()
         model, treeiter = select.get_selected()
@@ -692,6 +691,8 @@ class MyWindow(Gtk.Window):
   
     geciciliste=list()
     geciciliste2=list()
+
+    # Satışta alınan verinin tutulması
     def on_drag_data_received(self, widget, drag_context, x, y, data, info, time):
         if self.Dragliste[0] in self.geciciliste:
             pass
@@ -710,6 +711,7 @@ class MyWindow(Gtk.Window):
             self.ddKutuSayisi.present()
             self.ddKutuSayisi.show_all()
     
+    # Fabrikadan alınan ürünün tutulması
     def on_drag_data_received2(self, widget, drag_context, x, y, data, info, time):
         if self.Dragliste[0] in self.geciciliste2:
             pass
@@ -727,7 +729,8 @@ class MyWindow(Gtk.Window):
             self.ddKutuSayisiTable2.attach(self.ddKutuSayisi_button2,0,1,1,2)
             self.ddKutuSayisi2.present()
             self.ddKutuSayisi2.show_all()
-        
+    
+    # Satılan ilacın sepete eklenmesi
     def cartUpdate(self,event):
         if(int(self.Dragliste[4])>=int(self.ddKutuSayisi_sayi.get_text())):
             self.geciciliste.append(self.Dragliste[0])
@@ -745,10 +748,8 @@ class MyWindow(Gtk.Window):
     
     controlfactory=""
     
+    # Fabrikadan alınan ilacın sepete eklenmesi
     def cartUpdate2(self,event):
-        #
-        # error ekle tek factory olabilir.
-        #
         if((self.controlfactory== self.Dragliste[6]) or (self.controlfactory=="")):
             if(int(self.Dragliste[4])>=int(self.ddKutuSayisi_sayi2.get_text())):
                 self.controlfactory=self.Dragliste[6]
@@ -767,18 +768,12 @@ class MyWindow(Gtk.Window):
         else:
             errorWin(self,"Please select same factory !")
         
-    #### Veri Tabanı Fonksiyonları ####
-
+    # Veri tabanı bağlantısı başlatan fonksiyon
     def baglanti_baslat(self):
         self.con = sqlite3.connect('pharmacy.db')
         self.cursor = self.con.cursor()
     
-
-    #### İşlevsel Fonksiyonlar ####
-
-    
-    
-
+    # Sepet temizleme butonu görevi
     def on_click_clean(self,event,carttip):
         if(carttip==1):
             self.cartlistmodel.clear()

@@ -2,6 +2,7 @@ from deleteFonksiyonlar import *
 from guncelleFonksiyonlar import *
 from veriCekmeFonksiyonlar import *
 
+# Tablo sağ tıklamasında gözüken menü fonksiyonu
 def tablo_rightClick(treeview, event,tablename,self):
         self.table_type = tablename
         if event.button == 3: # right click
@@ -20,6 +21,7 @@ def tablo_rightClick(treeview, event,tablename,self):
             menu.popup( None, None, None,None, event.button, event.get_time())
             return True
 
+# Hasta tablosuna sol tıklandığında ilgili satırın alınmasını sağlayan fonksiyon
 def tablo_leftClick(treeview,event,tablename,self):
         self.table_typeLeft = tablename
         if self.table_typeLeft == 'patients':
@@ -36,6 +38,7 @@ def tablo_leftClick(treeview,event,tablename,self):
             self.proceedPatSurname = model[iter][3]
             self.proceedPatMail = model[iter][4]
 
+# Fabrika tablosuna sol tıklandığında ilgili satırın alınmasını sağlayan fonksiyon
 def tablo_leftClickFac(treeview,event,tablename,self):
         self.table_typeLeft = tablename
         if self.table_typeLeft == 'factories':
@@ -49,7 +52,7 @@ def tablo_leftClickFac(treeview,event,tablename,self):
             
             self.proceedPatFactory = model[iter][1]
             
-            
+# Fabrika tablosuna sağ tıklandığında menü çıkmasını sağlayan fonksiyon            
 def tablo_rightClickFac(treeview, event,tablename,self):
         self.table_type = tablename
         
@@ -70,6 +73,7 @@ def tablo_rightClickFac(treeview, event,tablename,self):
         for i in range(len(self.facilac_listesi)):
             self.facilac_listmodel.append(self.facilac_listesi[i])
 
+# Sağ tık menüsü
 def context_menu(self): # Buton sağ tıkında açılan menü 
         menu = Gtk.Menu()
 

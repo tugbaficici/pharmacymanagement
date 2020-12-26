@@ -1,3 +1,4 @@
+# Hastaları veri tabanından çeken fonksiyon
 def hasta_vericekme_query(self):
         self.cursor.execute("SELECT * FROM patients")
         hasta_list = self.cursor.fetchall()
@@ -8,7 +9,8 @@ def hasta_vericekme_query(self):
                 gecici_liste.append(str(j))
             
             self.hasta_listesi.append(gecici_liste)
-    
+
+# Çok satan ilaçları veri tabanından çeken fonksiyon
 def ts_vericekme_query(self):
         self.cursor.execute("SELECT NAME,ACTIVE,SELLCOUNT FROM medicines ORDER BY SELLCOUNT DESC")
         ts_list = self.cursor.fetchall()
@@ -20,6 +22,7 @@ def ts_vericekme_query(self):
             
             self.ts_listesi.append(gecici_liste)
 
+# İlaçları veri tabanından çeken fonksiyon
 def ilac_vericekme_query(self):
         self.cursor.execute("SELECT * FROM medicines")
         ilac_list = self.cursor.fetchall()
@@ -31,6 +34,7 @@ def ilac_vericekme_query(self):
             
             self.ilac_listesi.append(gecici_liste)
 
+# Fabrika ilaçlarını veri tabanından çeken fonksiyon
 def facilac_vericekme_query(self,facname):
         if(facname==None):
             self.cursor.execute("SELECT * FROM factorystock")
@@ -45,6 +49,7 @@ def facilac_vericekme_query(self,facname):
             
             self.facilac_listesi.append(gecici_liste)
 
+# Fabrikaları veri tabanından çeken fonksiyon
 def fabrika_vericekme_query(self):
         self.cursor.execute("SELECT * FROM factories")
         fabrika_list = self.cursor.fetchall()

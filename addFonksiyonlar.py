@@ -3,6 +3,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from veriCekmeFonksiyonlar import *
 
+# Hasta ekleme penceresi
 def hasta_ekle(event,self):
         self.add_PatientWindow = Gtk.Window()
         self.add_PatientWindow.set_title("Add New Patient")
@@ -32,7 +33,8 @@ def hasta_ekle(event,self):
 
         self.add_PatientWindow.present()
         self.add_PatientWindow.show_all()
-    
+
+# Fabrika ekleme penceresi
 def fabrika_ekle(event,self):
         self.add_factoriesWindow = Gtk.Window()
         self.add_factoriesWindow.set_title("Add New Factory")
@@ -52,6 +54,7 @@ def fabrika_ekle(event,self):
         self.add_factoriesWindow.present()
         self.add_factoriesWindow.show_all()
 
+# İlaç ekleme butonu görev fonksiyonu
 def ilac_addButtonEvent(event,self):
         self.cursor.execute("INSERT INTO medicines (NAME,DOSE,ACTIVE,PIECE,PRICE,FACTORY,PROSPECTUS) Values(?,?,?,?,?,?,?)",
             (self.ilac_nameEntry.get_text(),self.ilac_doseEntry.get_text(),self.ilac_activeEntry.get_text(),self.ilac_pieceEntry.get_text(),
@@ -72,6 +75,7 @@ def ilac_addButtonEvent(event,self):
         for i in range(len(self.ilac_listesi)):
             self.ilac_listmodel.append(self.ilac_listesi[i])
 
+# Hasta ekleme butonu görev fonksiyonu
 def add_NewPatient(event,self):
 
         tc = self.tcnumber.get_text()
@@ -89,7 +93,8 @@ def add_NewPatient(event,self):
 
         for i in range(len(self.hasta_listesi)):
             self.listmodel.append(self.hasta_listesi[i])
-    
+
+# Fabrika ekleme butonu görev fonksiyonu
 def add_NewFactory(event,self):
 
         factory_Name = self.factory_Name.get_text()

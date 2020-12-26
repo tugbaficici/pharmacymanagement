@@ -3,6 +3,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from veriCekmeFonksiyonlar import *
 
+# Fabrika sağ tık menüsündeki güncelle seçeneği görev fonksiyonu
 def factory_guncelle(event,self):
         self.cursor.execute("SELECT * FROM factories WHERE ID = ?",(self.secilen_Satir,))
         liste = list()
@@ -27,6 +28,7 @@ def factory_guncelle(event,self):
         self.update_FactoryWindow.present()
         self.update_FactoryWindow.show_all()
 
+# İlaç cart tablosu sağ tık menüsündeki güncelle seçeneği görev fonksiyonu
 def cart_guncelle(event,self):
         self.cartGuncelleWindow = Gtk.Window()
         self.cartGuncelleWindow.set_title("Box")
@@ -44,7 +46,8 @@ def cart_guncelle(event,self):
         
         self.cartGuncelleWindow.present()
         self.cartGuncelleWindow.show_all()
-    
+
+# Fabrika cart tablosu sağ tık menüsündeki güncelle seçeneği görev fonksiyonu
 def cart_guncelle2(event,self):
         self.cartGuncelleWindow2 = Gtk.Window()
         self.cartGuncelleWindow2.set_title("Box")
@@ -64,6 +67,7 @@ def cart_guncelle2(event,self):
         self.cartGuncelleWindow2.present()
         self.cartGuncelleWindow2.show_all()
 
+# Hasta güncelleme ekranı
 def hasta_guncelle(event,self):
         self.cursor.execute("SELECT * FROM patients WHERE ID = ?",(self.secilen_Satir,))
         liste = list()
@@ -103,6 +107,7 @@ def hasta_guncelle(event,self):
         self.update_PatientWindow.present()
         self.update_PatientWindow.show_all()
     
+# İlaç güncelleme ekranı
 def ilac_guncelle(event,self):
         self.cursor.execute("SELECT * FROM medicines WHERE ID = ?",(self.secilen_Satir,))
         liste = list()
@@ -146,6 +151,7 @@ def ilac_guncelle(event,self):
         self.update_MedicineWindow.present()
         self.update_MedicineWindow.show_all()
 
+# Hasta - fabrika - ilaç güncelleme fonksiyonu görevi
 def onclick_Update(action,self):
         if self.table_type == 'patients':
         

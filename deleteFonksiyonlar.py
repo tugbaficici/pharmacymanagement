@@ -1,5 +1,6 @@
 from veriCekmeFonksiyonlar import *
 
+# Sağ tık menüsündeki silme butonu görevi
 def onclick_Delete(action,self):
         if self.table_type == 'patients':
             self.cursor.execute("DELETE FROM patients WHERE ID = ?",(self.secilen_Satir,))

@@ -6,6 +6,7 @@ import gi,sqlite3
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+# QR kod çekme fonksiyonu
 def QRkodcekme(event,self):
         ###
         ### Kameradan çıkmak için ESCYE basılması gerekir.
@@ -37,6 +38,7 @@ def QRkodcekme(event,self):
                 else:
                     errorWin(self,"Out of stock " + x[1].upper() + "!")
 
+# Fatura oluşturma fonksiyonu
 def create_invoice(self,pdfname):
         # Creating Canvas
         today = date.today()
@@ -124,6 +126,7 @@ def create_invoice(self,pdfname):
         # Saving the PDF
         c.save()
 
+# Error ekranı
 def errorWin(self,error_text):
         global errorWindow
         errorWindow = Gtk.Window()
@@ -142,6 +145,7 @@ def errorWin(self,error_text):
 
         errorWindow.present()
         errorWindow.show_all()
-    
+
+# Error ekranı kapatma butonu görevi
 def error_close(self,event):
         errorWindow.hide()
