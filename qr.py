@@ -24,7 +24,7 @@ def read_barcodes(frame):
         global yakalanan
         yakalanan=barcode_info
         #keyboard = Controller()
-        if(yakalanan!= ""):
+        #if(yakalanan!= ""):
             #keyboard.press(Key.esc)
             #keyboard.release(Key.esc)
             
