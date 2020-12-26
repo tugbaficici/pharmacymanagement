@@ -11,7 +11,7 @@ def send_mail(even,self,to,bodytext,pdfname):
         mail = smtplib.SMTP("smtp.gmail.com",587)
         mail.ehlo()
         mail.starttls()
-        mail.login("opensourcepms@gmail.com", "123123123Aa*")
+        mail.login("opensourcepms@gmail.com", "sifre")
 
         mesaj = MIMEMultipart()
         mesaj["From"] = "opensourcepms@gmail.com" 
