@@ -11,29 +11,31 @@ def QRkodcekme(event,self):
         ### Kameradan çıkmak için ESCYE basılması gerekir.
         ###
         #yakalanan="5 Parol 500 Parasetamol"
-        yakalanan=QRdanEkle()
-        print(yakalanan)
-        x=yakalanan.split()
-        self.Dragliste=list()
-        for i in self.ilac_listmodel:
-            if(x[0]==i[0]):
-                for a in i:
-                    self.Dragliste.append(a)
-        if self.Dragliste[0] in self.geciciliste:
-            pass
-        else:
-            if(int(self.Dragliste[4])>=1):
-                self.geciciliste.append(self.Dragliste[0])
-                a=self.Dragliste[7]
-                b=self.Dragliste[8]
-                self.Dragliste.pop()
-                self.Dragliste.pop()
-                self.Dragliste.append("1")
-                self.Dragliste.append(a)
-                self.Dragliste.append(b)
-                self.cartlistmodel.append(self.Dragliste)
+        yakalanan=QRdanEkle(self)
+        ilaclar = yakalanan.split(',')
+        for ilac in ilaclar:
+            x=ilac.split()
+            self.Dragliste=list()
+            for i in self.ilac_listmodel:
+                if(x[0]==i[0]):
+                    for a in i:
+                        self.Dragliste.append(a)
+
+            if self.Dragliste[0] in self.geciciliste:
+                pass
             else:
-                self.errorWin("Out of stock !")
+                if(int(self.Dragliste[4])>=int(x[2])):
+                    self.geciciliste.append(self.Dragliste[0])
+                    a=self.Dragliste[7]
+                    b=self.Dragliste[8]
+                    self.Dragliste.pop()
+                    self.Dragliste.pop()
+                    self.Dragliste.append(x[2])
+                    self.Dragliste.append(a)
+                    self.Dragliste.append(b)
+                    self.cartlistmodel.append(self.Dragliste)
+                else:
+                    errorWin(self,"Out of stock " + x[1].upper() + "!")
 
 def create_invoice(self,pdfname):
         # Creating Canvas
